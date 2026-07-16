@@ -1,0 +1,50 @@
+{
+  "node": [
+    [
+      "Arrow",
+      "Array"
+    ],
+    [
+      "Circle",
+      "Point"
+    ],
+    [
+      "Circle",
+      "Scalar"
+    ],
+    [
+      "Complex",
+      "Point"
+    ],
+    [
+      "Line",
+      "Point"
+    ],
+    [
+      "Line",
+      "Scalar"
+    ],
+    [
+      "Point",
+      "Scalar"
+    ],
+    [
+      "Point",
+      "Text"
+    ],
+    [
+      "Scalar",
+      "Text"
+    ]
+  ],
+  "value": [
+    [
+      "Point",
+      "Text"
+    ],
+    [
+      "Scalar",
+      "Text"
+    ]
+  ]
+}
