@@ -101,10 +101,17 @@ def test_invalid_python_names_fall_back():
 
 
 def test_tuple_unpacking_falls_back():
+    # function scope (CALL→STORE→STORE, no SWAP)
     with gm.Store():
         a, b = gm.point(1, 1), gm.point(2, 2)
     assert a.id == "p-0"
     assert b.id == "p-1"
+    # module scope compiles differently (CALL→SWAP→STORE→STORE)
+    ns = {"gm": gm}
+    with gm.Store():
+        exec(compile("a, b = gm.point(1, 1), gm.point(2, 2)", "<m>", "exec"), ns)
+    assert ns["a"].id == "p-0"
+    assert ns["b"].id == "p-1"
 
 
 def test_attribute_target_falls_back():
@@ -207,31 +214,39 @@ def test_run_generated_infers_from_exec_source():
     ]
 
 
-def test_exec_without_linecache_falls_back():
+def test_exec_from_string_infers():
+    # bytecode-based inference needs no source: bare exec behaves like a file
     ns = {"gm": gm}
     with gm.Store() as s:
         exec(compile("p = gm.point(3, 4)", "<no-source>", "exec"), ns)
-    assert ns["p"].id == "p-0"
-    assert gm.emit(s) == "p-0 = \\point 3 4"
+    assert ns["p"].id == "p"
+    assert gm.emit(s) == "p = \\point 3 4"
 
 
-def test_stale_linecache_entry_is_refingerprinted():
-    import linecache
+def test_python_dash_c_infers():
+    import subprocess
+    import sys
 
-    def run(code):
-        linecache.cache["<gen-reused>"] = (
-            len(code),
-            None,
-            code.splitlines(True),
-            "<gen-reused>",
-        )
-        ns = {"gm": gm}
-        exec(compile(code, "<gen-reused>", "exec"), ns)
-        return ns
+    script = "import pygeomatic as gm; p = gm.point(2, 3); print(p.id)"
+    proc = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, timeout=60
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "p"
 
-    with gm.Store():
-        first = run("alpha = gm.point(1, 1)")
-        # same filename, different source: spans must come from the NEW code
-        second = run("x = 0\nbeta = gm.point(2, 2)")
-    assert first["alpha"].id == "alpha"
-    assert second["beta"].id == "beta"
+
+def test_interactive_repl_infers():
+    import subprocess
+    import sys
+
+    session = "import pygeomatic as gm\np = gm.point(2, 3)\nprint(p.id)\n"
+    # -i forces REPL statement-at-a-time compilation even with piped stdin
+    proc = subprocess.run(
+        [sys.executable, "-i", "-q"],
+        input=session,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert proc.stdout.strip() == "p"

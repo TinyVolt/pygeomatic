@@ -1,60 +1,70 @@
 """Infer a command's output id from the python assignment target.
 
-`p = gm.point(3, 4)` emits `p = \\point 3 4` — no `out="p"` needed. The caller
-frame's currently-executing CALL instruction carries the exact source span of
-the call expression (PEP 657, python 3.11+); when that span is the value of a
-simple single-target assignment (`name = call(...)`, `name: T = call(...)`,
-`(name := call(...))`), the target's name becomes the output id, with python
-underscores translated to DSL dashes (`fwd_traj` → `fwd-traj`).
+`p = gm.point(3, 4)` emits `p = \\point 3 4` — no `out="p"` needed. The
+caller's bytecode tells us whether this call's result is stored to a simple
+name: the frame's currently-executing CALL instruction is immediately followed
+by STORE_NAME/STORE_FAST/... exactly for `name = call(...)` (and, with an
+intervening `COPY 1`, for a walrus `(name := call(...))`). Working from
+bytecode instead of source text makes the behavior identical everywhere —
+files, the REPL, `python -c`, notebooks, `exec`'d strings.
 
 Inference is best-effort and must never change what previously worked: any
-doubt — unavailable source, non-assignment statement, tuple/attribute target,
-an id that is invalid, engine-auto-shaped (`p1`, `num3`, ...), or already
+doubt — no store (nested call arguments, expression statements), an ambiguous
+target (tuple unpacking, chained `a = b = ...`, attribute/subscript targets),
+or an id that is invalid, engine-auto-shaped (`p1`, `num3`, ...), or already
 taken in the store (loops, system defaults) — falls back to the auto-generated
-id. An explicit `out=` always wins; calls originating inside pygeomatic
-itself (parse replay, macro bodies) are never inferred.
-
-Code run through `exec` sees no source unless its filename is seeded into
-`linecache.cache` — runner.py's driver does this for `"<generated>"`.
+id. Python underscores translate to DSL dashes (`fwd_traj` → `fwd-traj`). An
+explicit `out=` always wins; calls originating inside pygeomatic itself
+(parse replay, macro bodies) are never inferred.
 """
 
 from __future__ import annotations
 
-import ast
-import linecache
-from itertools import islice
+import dis
+from bisect import bisect_right
+from types import CodeType
 from typing import Optional
+from weakref import WeakKeyDictionary
 
 from .store import ENGINE_AUTO_ID_RE, IDENTIFIER_RE, Store
 
-Span = tuple[int, int, int, int]
+_CALL_OPS = frozenset({"CALL", "CALL_KW", "CALL_FUNCTION_EX"})
+_STORE_OPS = frozenset({"STORE_NAME", "STORE_FAST", "STORE_GLOBAL", "STORE_DEREF"})
 
-# filename -> (source fingerprint, {call-expression span -> assignment target})
-_span_cache: dict[str, tuple[int, dict[Span, str]]] = {}
+# code object -> (sorted instruction offsets, {CALL offset -> stored name})
+_targets_cache: WeakKeyDictionary[
+    CodeType, tuple[list[int], dict[int, str]]
+] = WeakKeyDictionary()
 
 
-def _assignment_spans(tree: ast.AST) -> dict[Span, str]:
-    """Map the span of every `name = <call>`-shaped Call node to its name."""
-    spans: dict[Span, str] = {}
-    for node in ast.walk(tree):
-        value: Optional[ast.expr]
-        if (
-            isinstance(node, ast.Assign)
-            and len(node.targets) == 1
-            and isinstance(node.targets[0], ast.Name)
-        ):
-            value, name = node.value, node.targets[0].id
-        elif isinstance(node, (ast.AnnAssign, ast.NamedExpr)) and isinstance(
-            node.target, ast.Name
-        ):
-            value, name = node.value, node.target.id
-        else:
+def _assignment_targets(code: CodeType) -> tuple[list[int], dict[int, str]]:
+    """Instruction offsets + map of each CALL stored to a simple name."""
+    targets: dict[int, str] = {}
+    instructions = [
+        ins for ins in dis.get_instructions(code) if ins.opname != "EXTENDED_ARG"
+    ]
+
+    def op(i: int) -> str:
+        return instructions[i].opname if i < len(instructions) else ""
+
+    for i, ins in enumerate(instructions):
+        if ins.opname not in _CALL_OPS:
             continue
-        if isinstance(value, ast.Call) and value.end_lineno is not None:
-            spans[
-                (value.lineno, value.end_lineno, value.col_offset, value.end_col_offset)
-            ] = name
-    return spans
+        if op(i + 1) in _STORE_OPS and op(i + 2) not in _STORE_OPS:
+            # `name = call(...)` / `name: T = call(...)`. A second store
+            # right after is a function-scope unpack `a, b = ..., call(...)`
+            # (module scope emits SWAP instead) — ambiguous, skipped.
+            targets[ins.offset] = instructions[i + 1].argval
+        elif (
+            op(i + 1) == "COPY"
+            and instructions[i + 1].arg == 1
+            and op(i + 2) in _STORE_OPS
+            and op(i + 3) not in _STORE_OPS
+        ):
+            # walrus `(name := call(...))`; a second store would make it a
+            # chained `a = b = call(...)` — ambiguous, skipped
+            targets[ins.offset] = instructions[i + 2].argval
+    return [ins.offset for ins in instructions], targets
 
 
 def _call_target(frame) -> Optional[str]:
@@ -63,23 +73,17 @@ def _call_target(frame) -> Optional[str]:
     if module == "pygeomatic" or module.startswith("pygeomatic."):
         return None
     code = frame.f_code
-    lines = linecache.getlines(code.co_filename, frame.f_globals)
-    if not lines:
+    cached = _targets_cache.get(code)
+    if cached is None:
+        cached = _assignment_targets(code)
+        _targets_cache[code] = cached
+    offsets, targets = cached
+    # f_lasti may point into the CALL's inline cache entries; resolve to the
+    # owning instruction (greatest offset <= f_lasti).
+    idx = bisect_right(offsets, frame.f_lasti) - 1
+    if idx < 0:
         return None
-    source = "".join(lines)
-    fingerprint = hash(source)
-    cached = _span_cache.get(code.co_filename)
-    if cached is None or cached[0] != fingerprint:
-        try:
-            spans = _assignment_spans(ast.parse(source))
-        except SyntaxError:
-            spans = {}
-        cached = (fingerprint, spans)
-        _span_cache[code.co_filename] = cached
-    pos = next(islice(code.co_positions(), frame.f_lasti // 2, None), None)
-    if pos is None:
-        return None
-    return cached[1].get(pos)
+    return targets.get(offsets[idx])
 
 
 def infer_out_name(frame, store: Store) -> Optional[str]:
