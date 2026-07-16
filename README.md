@@ -45,9 +45,8 @@ m = \mid-point c.center b
   engine generates those for internal nodes (property accessors, literals,
   array elements) and a collision creates a reactive cycle that hangs the
   tab. pygeomatic's dashed ids can never collide. Inference reads the caller's
-  source, so it works from files, `run_generated`, and notebooks, but not from
-  `python -c` or a bare `exec` (those fall back to auto-ids); `out=` always
-  works.
+  bytecode, not its source, so it behaves identically everywhere: files,
+  `run_generated`, the REPL, `python -c`, notebooks, `exec`'d strings.
 - **No infix arithmetic**: `a + b` on nodes raises; use `gm.add(a, b)` etc.,
   so each Python call is exactly one DSL line (the DSL forbids nesting).
 - **Node properties** are exactly the whitelist in
