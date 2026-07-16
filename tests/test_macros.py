@@ -168,7 +168,7 @@ def test_multiline_text_collapses_to_one_line():
     with gm.Store() as st:
         t = gm.text("breakpoints = creases\n(max switches line)")
         assert t.numeric == "breakpoints = creases (max switches line)"
-    assert gm.emit(st) == 'text-0 = \\text "breakpoints = creases (max switches line)"'
+    assert gm.emit(st) == 't = \\text "breakpoints = creases (max switches line)"'
 
 
 def test_multiline_implicit_text_collapses():

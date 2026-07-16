@@ -25,6 +25,7 @@ path, a URL, a JSON string, or an already-parsed list of dicts — mirroring
 from __future__ import annotations
 
 import json
+import sys
 import urllib.request
 from dataclasses import dataclass
 from importlib.resources import files
@@ -33,6 +34,7 @@ from typing import Any, Optional, Union
 
 from .coercions import _coercions_enabled
 from .emit import _render_number
+from .inference import infer_out_name
 from .nodes import GNode
 from .prompting import python_name
 from .registry import FunctionDef, P, REGISTRY
@@ -198,6 +200,9 @@ def _make_wrapper(macro: MacroDef, source: str):
                     f"\\{macro.keyword}: parameter {name!r} expects a node or a "
                     f"number, got {type(arg).__name__!r}"
                 )
+
+        if out is None:
+            out = infer_out_name(sys._getframe(1), store)
 
         replay_token = _macro_replay.set(True)
         engine_token = _allow_engine_ids.set(True)

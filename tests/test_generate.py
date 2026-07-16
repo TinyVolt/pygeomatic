@@ -51,9 +51,9 @@ def test_run_generated_success():
     assert result.ok
     assert result.dsl == [
         "a = \\point 1 2",
-        "p-0 = \\point 4 6",
-        "num-0 = \\distance a p-0",
-        "\\highlight a p-0",
+        "b = \\point 4 6",
+        "num-0 = \\distance a b",
+        "\\highlight a b",
     ]
 
 
@@ -99,7 +99,7 @@ def test_generate_dsl_retries_with_error_feedback():
 
     result = gm.generate_dsl("scene", complete)
     assert result.attempts == 2
-    assert result.dsl[-1] == "\\highlight a p-0"
+    assert result.dsl[-1] == "\\highlight a b"
     # the retry message contained the actual failure
     assert "underscores" in seen_errors[0]
 

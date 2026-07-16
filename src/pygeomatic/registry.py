@@ -7,6 +7,9 @@ the DSL's auto-naming), and wraps the numeric result in a typed node.
 
 Public functions take their DSL parameters *positionally* plus an optional
 `out="my-id"` keyword for an explicit output id (the `out = \\fn ...` form).
+Without `out=`, a simple assignment target names the output instead —
+`p = gm.point(3, 4)` emits `p = \\point 3 4` (see inference.py); otherwise
+the id is auto-generated.
 
 Argument coercions (each keeps emission deterministic):
 - a GNode        → its id / `base.prop` reference
@@ -18,11 +21,13 @@ Argument coercions (each keeps emission deterministic):
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass, field as dc_field
 from functools import wraps
 from typing import Any, Callable, Optional, Sequence
 
 from .coercions import NODE_COERCIONS, VALUE_COERCIONS, coerce_gnode, coercions_enabled
+from .inference import infer_out_name
 from .nodes import Bool, GNode, Text
 from .store import ArgToken, Store, TextLit, current_store, sanitize_text
 
@@ -385,6 +390,8 @@ def geomatic_fn(
                     # produces a Dummy, which is never assigned an id.
                     store.record(keyword, tokens, None)
                     return node
+                if out is None:
+                    out = infer_out_name(sys._getframe(1), store)
                 node_id = store.allocate_id(node.type, out)
                 store.register(node, node_id)
                 store.record(keyword, tokens, node_id)

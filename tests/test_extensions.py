@@ -217,7 +217,8 @@ def test_custom_output_type_gets_dashed_auto_id(tmp_path):
     source = make_manifest(tmp_path, [ext])
     gm.load_extensions(source)
     with gm.Store() as s:
-        node = gm.make_widget(5)
+        # inside a list literal so no assignment-target name is inferred
+        node = [gm.make_widget(5)][0]
         assert node.type == "Widget"
         assert node.numeric is None if hasattr(node, "numeric") else True
     assert gm.emit(s).strip() == "widget-0 = \\make-widget 5"

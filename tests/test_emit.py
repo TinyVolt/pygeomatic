@@ -17,11 +17,11 @@ def test_emit_small_scene():
     assert gm.emit(s) == "\n".join(
         [
             "a = \\point 1 2",
-            "p-0 = \\point 4 6",
-            "num-0 = \\distance a p-0",
-            "circ-0 = \\circle a 3",
-            "p-1 = \\mid-point circ-0.center p-0",
-            "\\highlight a p-0",
+            "b = \\point 4 6",
+            "num-0 = \\distance a b",
+            "c = \\circle a 3",
+            "p-0 = \\mid-point c.center b",
+            "\\highlight a b",
             'text-0 = \\text "hello world"',
         ]
     )
@@ -41,9 +41,9 @@ def test_implicit_text_precedes_annotation():
         gm.annotate_pin(a, "origin")
     assert gm.emit(s) == "\n".join(
         [
-            "p-0 = \\point 0 0",
+            "a = \\point 0 0",
             'text-0 = \\text "origin"',
-            "pin-0 = \\annotate-pin p-0 text-0",
+            "pin-0 = \\annotate-pin a text-0",
         ]
     )
 
@@ -58,10 +58,11 @@ def test_omitted_defaults_are_omitted_from_line():
 
 
 def test_explicit_id_reserves_counter():
-    with gm.Store() as s:
+    with gm.Store():
         gm.point(0, 0, out="p-5")
-        p = gm.point(1, 1)
-    assert p.id == "p-6"
+        # inside a list literal so no assignment-target name is inferred
+        nodes = [gm.point(1, 1)]
+    assert nodes[0].id == "p-6"
 
 
 def test_variadic_and_imperative_forms():
@@ -72,7 +73,7 @@ def test_variadic_and_imperative_forms():
         gm.add(a, b, c)
         gm.clear()
     lines = gm.emit(s).splitlines()
-    assert lines[3] == "num-3 = \\add num-0 num-1 num-2"
+    assert lines[3] == "num-0 = \\add a b c"
     assert lines[4] == "\\clear"
 
 

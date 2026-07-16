@@ -14,9 +14,13 @@ from dataclasses import dataclass, field
 from typing import Optional, Sequence
 
 _DRIVER = """\
+import linecache
 import sys
 
 code = sys.stdin.read()
+# Seed linecache so assignment-target name inference (inference.py) can see
+# the source of the exec'd code.
+linecache.cache["<generated>"] = (len(code), None, code.splitlines(True), "<generated>")
 namespace = {}
 exec(compile(code, "<generated>", "exec"), namespace)
 

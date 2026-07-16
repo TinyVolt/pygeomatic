@@ -10,22 +10,22 @@ function maps 1:1 to a geomatic command; calling it computes numeric values
 import pygeomatic as gm
 
 with gm.Store() as s:
-    a = gm.point(1, 2, out="a")
+    a = gm.point(1, 2)             # assignment target → output id `a`
     b = gm.point(4, 6)
     d = gm.distance(a, b)          # float(d) == 5.0
     c = gm.circle(a, 3)
-    m = gm.mid_point(c.center, b)  # property access → `circ-0.center`
+    m = gm.mid_point(c.center, b)  # property access → `c.center`
     gm.highlight(a, b)
     print(gm.emit(s))
 ```
 
 ```
 a = \point 1 2
-p-0 = \point 4 6
-num-0 = \distance a p-0
-circ-0 = \circle a 3
-p-1 = \mid-point circ-0.center p-0
-\highlight a p-0
+b = \point 4 6
+d = \distance a b
+c = \circle a 3
+m = \mid-point c.center b
+\highlight a b
 ```
 
 ## Conventions
@@ -34,14 +34,20 @@ p-1 = \mid-point circ-0.center p-0
   `reduce_sum`). Names that would shadow Python builtins get a trailing
   underscore: `abs_`, `pow_`, `min_`, `max_`, `round_`, `bool_`, `filter_`,
   `and_`, `or_`, `not_`, `complex_`, `help_`.
-- **Arguments are positional** (like the DSL); the only keyword is
-  `out="my-id"` for an explicit output id (`my-id = \fn ...`). Ids must match
-  the DSL grammar: start with a letter, letters/digits/dashes, **no
-  underscores** — and must not look like engine auto-names (`num0`, `p3`,
-  `text1`): the engine generates those for internal nodes (property accessors,
-  literals, array elements) and a collision creates a reactive cycle that
-  hangs the tab. pygeomatic's own auto-ids are dashed (`num-0`, `p-1`) so they
-  can never collide.
+- **Output ids**: a simple assignment target names the output —
+  `fwd_traj = gm.point(3, 4)` emits `fwd-traj = \point 3 4` (underscores
+  become dashes). The optional `out="my-id"` keyword overrides it. Anything
+  ambiguous or unsafe (no assignment, tuple/attribute targets, loop reuse of a
+  name, a name shaped like an engine auto-name, a taken id) silently falls
+  back to a dashed auto-id (`num-0`, `p-1`). Explicit ids must match the DSL
+  grammar: start with a letter, letters/digits/dashes, **no underscores** —
+  and must not look like engine auto-names (`num0`, `p3`, `text1`): the
+  engine generates those for internal nodes (property accessors, literals,
+  array elements) and a collision creates a reactive cycle that hangs the
+  tab. pygeomatic's dashed ids can never collide. Inference reads the caller's
+  source, so it works from files, `run_generated`, and notebooks, but not from
+  `python -c` or a bare `exec` (those fall back to auto-ids); `out=` always
+  works.
 - **No infix arithmetic**: `a + b` on nodes raises; use `gm.add(a, b)` etc.,
   so each Python call is exactly one DSL line (the DSL forbids nesting).
 - **Node properties** are exactly the whitelist in

@@ -96,12 +96,16 @@ Do not import anything, do not create a Store, do not call `gm.emit` — only
 define `build`.
 
 Rules (violations raise errors):
-1. Arguments are POSITIONAL, in the documented order. The only keyword
-   argument is `out="my-id"` to give the output node an explicit id. Ids
-   must start with a letter and contain only letters, digits and dashes —
-   NEVER underscores (`fwd-traj`, not `fwd_traj`). Never use ids shaped like
-   `<prefix><digits>` (`num0`, `p3`, `text1`): the engine auto-generates
-   those for internal nodes and they collide. Prefer descriptive names.
+1. Arguments are POSITIONAL, in the documented order. A simple assignment
+   target names the output node: `fwd_traj = gm.point(3, 4)` emits
+   `fwd-traj = \\point 3 4` (python underscores become DSL dashes), so
+   descriptive variable names give descriptive ids for free. The only
+   keyword argument is `out="my-id"` for an id different from the variable.
+   Explicit ids must start with a letter and contain only letters, digits
+   and dashes — NEVER underscores (`fwd-traj`, not `fwd_traj`). Never use
+   ids shaped like `<prefix><digits>` (`num0`, `p3`, `text1`): the engine
+   auto-generates those for internal nodes and they collide (inferred names
+   of that shape are skipped automatically). Prefer descriptive names.
 2. NO infix arithmetic on nodes: never `a + b`, `a * 2`, `-a` — use
    `gm.add(a, b)`, `gm.mul(a, 2)`, `gm.neg(a)`. Plain Python numbers may use
    normal arithmetic freely (e.g. in a `for` loop computing coordinates);
