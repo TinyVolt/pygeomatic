@@ -100,18 +100,18 @@ def test_invalid_python_names_fall_back():
     assert _hidden.id == "p-0"
 
 
-def test_tuple_unpacking_falls_back():
+def test_multi_target_assignment_infers_both_scopes():
     # function scope (CALL→STORE→STORE, no SWAP)
     with gm.Store():
         a, b = gm.point(1, 1), gm.point(2, 2)
-    assert a.id == "p-0"
-    assert b.id == "p-1"
+    assert a.id == "a"
+    assert b.id == "b"
     # module scope compiles differently (CALL→SWAP→STORE→STORE)
     ns = {"gm": gm}
     with gm.Store():
         exec(compile("a, b = gm.point(1, 1), gm.point(2, 2)", "<m>", "exec"), ns)
-    assert ns["a"].id == "p-0"
-    assert ns["b"].id == "p-1"
+    assert ns["a"].id == "a"
+    assert ns["b"].id == "b"
 
 
 def test_attribute_target_falls_back():
@@ -124,11 +124,37 @@ def test_attribute_target_falls_back():
     assert h.p.id == "p-0"
 
 
-def test_chained_assignment_falls_back():
-    with gm.Store():
+def test_chained_assignment_names_every_target():
+    with gm.Store() as s:
         a = b = gm.point(1, 1)
     assert a is b
-    assert a.id == "p-0"
+    assert a.id == "a"  # the python object carries the FIRST target's id
+    assert s.nodes["b"].id == "b"  # each extra target gets its own cloned node
+    assert gm.emit(s) == "a = \\point 1 1\nb = \\point 1 1"
+
+
+def test_chained_assignment_triple_and_taken_names():
+    with gm.Store() as s:
+        x = y = z = gm.scalar(2)
+    assert x.id == "x"
+    assert gm.emit(s).splitlines() == [
+        "x = \\scalar 2",
+        "y = \\scalar 2",
+        "z = \\scalar 2",
+    ]
+    with gm.Store() as s2:
+        gm.point(0, 0, out="a")
+        a = b = gm.point(1, 1)  # "a" taken → object gets "b", no extra
+    assert a.id == "b"
+    assert gm.emit(s2).splitlines()[-1] == "b = \\point 1 1"
+
+
+def test_walrus_value_assigned_names_both():
+    with gm.Store() as s:
+        d = (w := gm.point(1, 2))
+    assert d is w
+    assert w.id == "w"
+    assert gm.emit(s) == "w = \\point 1 2\nd = \\point 1 2"
 
 
 def test_helper_function_indirection_falls_back():

@@ -56,6 +56,9 @@ class Command:
     output_id: Optional[str]
     keyword: str
     args: list[ArgToken] = field(default_factory=list)
+    # True for an anonymous infix-operator result (`a + b` with no name of its
+    # own): a following same-keyword infix command may absorb it (fuse_variadic).
+    fusable: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +191,14 @@ class NameGenerator:
             if num >= self._counters.get(prefix, 0):
                 self._counters[prefix] = num + 1
 
+    def release(self, node_id: str) -> None:
+        """Undo the most recent auto-allocation (variadic fusion removes it)."""
+        m = re.match(r"([a-zA-Z-]*?)(\d+)\Z", node_id)
+        if m:
+            prefix, num = m.group(1), int(m.group(2))
+            if self._counters.get(prefix) == num + 1:
+                self._counters[prefix] = num
+
 
 # ---------------------------------------------------------------------------
 # Store
@@ -231,13 +242,48 @@ class Store:
         self.nodes[node_id] = node
         return node
 
-    def record(self, keyword: str, args: list[ArgToken], output_id: Optional[str]) -> None:
+    def record(
+        self,
+        keyword: str,
+        args: list[ArgToken],
+        output_id: Optional[str],
+        fusable: bool = False,
+    ) -> None:
         # A macro body's commands never reach the tape — the single macro
         # invocation line stands for all of them (recorded by its wrapper
         # AFTER the replay context exits, so nested macros stay suppressed).
         if _macro_replay.get():
             return
-        self.commands.append(Command(output_id=output_id, keyword=keyword, args=args))
+        self.commands.append(
+            Command(output_id=output_id, keyword=keyword, args=args, fusable=fusable)
+        )
+
+    def fuse_variadic(self, keyword: str, tokens: list[ArgToken]) -> list[ArgToken]:
+        """Fold an anonymous just-recorded same-keyword operand into `tokens`.
+
+        `d = a + b + c` evaluates as `(a + b) + c`: the inner `\\add a b` is on
+        the tape with an auto id and, being anonymous, provably has no other
+        consumer. Splice its args in place of its reference and drop it, so one
+        variadic `\\add a b c` is recorded instead. Loops so both operands of
+        `(a + b) + (c + d)` collapse too.
+        """
+        while self.commands:
+            last = self.commands[-1]
+            if not (last.fusable and last.keyword == keyword and last.output_id):
+                break
+            spots = [
+                i
+                for i, t in enumerate(tokens)
+                if isinstance(t, IdRef) and t.id == last.output_id
+            ]
+            if len(spots) != 1:
+                break
+            i = spots[0]
+            tokens = [*tokens[:i], *last.args, *tokens[i + 1 :]]
+            self.commands.pop()
+            self.nodes.pop(last.output_id, None)
+            self.names.release(last.output_id)
+        return tokens
 
     # -- context manager ----------------------------------------------------
 

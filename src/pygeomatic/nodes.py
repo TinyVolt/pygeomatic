@@ -10,12 +10,17 @@ not computable in Python (record-only commands). Read them via ``.numeric`` /
 ``float(node)`` / ``complex(node)`` — these are inspection helpers, not DSL
 properties.
 
-Nodes deliberately do NOT support infix arithmetic (`+ - * /`): each geomatic
-command must be an explicit function call so Python code maps 1:1 to DSL lines.
+Scalar / Complex / Array nodes support infix arithmetic (`+ - * /`, unary
+`-`) and Arrays support `arr[i]` / `len(arr)`: each operation routes through
+the corresponding overload command (`\\add`, `\\get-array-element`, ...) and
+records exactly like the explicit call. Chained `a + b + c` fuses into ONE
+variadic `\\add a b c` (store.fuse_variadic). Other node types (Point, Circle,
+...) keep instructive errors, as do `**` and `@`.
 """
 
 from __future__ import annotations
 
+from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import ClassVar, Optional, Union
 
@@ -51,15 +56,62 @@ class PropRef:
 Ref = Union[IdRef, PropRef]
 
 _NO_INFIX_MSG = (
-    "pygeomatic nodes do not support infix arithmetic ({op}); "
-    "use pygeomatic.add / sub / mul / div / neg / pow_ instead so each "
-    "operation maps to exactly one geomatic command"
+    "pygeomatic does not support infix {op} for {types}; "
+    "use the explicit pygeomatic function for the operation instead"
 )
+
+# Set while an operator dunder routes through a registered command, so the
+# recording wrapper knows the call is infix-originated: it hops the inference
+# frame to the user's BINARY_OP/BINARY_SUBSCR and enables variadic fusion.
+_infix_call: ContextVar[bool] = ContextVar("pygeomatic_infix_call", default=False)
+
+# Operand kinds the arithmetic overload commands (`\add`, `\mul`, ...) accept.
+_ARITHMETIC_NODES = ("Scalar", "Complex", "Array")
+
+
+def _is_arithmetic_operand(v) -> bool:
+    if isinstance(v, GNode):
+        return v.type in _ARITHMETIC_NODES
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+def _infix(keyword: str, *operands):
+    """Route an operator dunder through the registered command `keyword`."""
+    from .registry import REGISTRY
+
+    token = _infix_call.set(True)
+    try:
+        return REGISTRY[keyword].py_func(*operands)
+    finally:
+        _infix_call.reset(token)
+
+
+def _arith(op: str, keyword: str, *operands):
+    for v in operands:
+        if not _is_arithmetic_operand(v):
+            if isinstance(v, GNode):
+                raise TypeError(_NO_INFIX_MSG.format(op=op, types=f"{v.type} nodes"))
+            return NotImplemented
+    return _infix(keyword, *operands)
 
 
 def _reject(op: str):
     def method(self, *_args):
-        raise TypeError(_NO_INFIX_MSG.format(op=op))
+        raise TypeError(_NO_INFIX_MSG.format(op=op, types=f"{self.type} nodes"))
+
+    return method
+
+
+def _reject_inplace(op: str):
+    # `acc += x` would rebind the python variable to a NEW node while the
+    # DSL node `acc` keeps its old value — silent divergence. Refuse it.
+    def method(self, _other):
+        binop = op.rstrip("=")
+        raise TypeError(
+            f"in-place {op} is not supported on geomatic nodes: it rebinds the "
+            f"python variable to a NEW node while the original DSL node keeps "
+            f"its id and value. Assign a new name instead: c = a {binop} b"
+        )
 
     return method
 
@@ -102,14 +154,43 @@ class GNode(BaseModel):
         clone._ref = base._prop(field)
         return clone
 
-    # No infix arithmetic — see module docstring.
-    __add__ = __radd__ = _reject("+")
-    __sub__ = __rsub__ = _reject("-")
-    __mul__ = __rmul__ = _reject("*")
-    __truediv__ = __rtruediv__ = _reject("/")
+    # Infix arithmetic on Scalar/Complex/Array routes through the overload
+    # commands and records on the tape; other node types raise instructively.
+    def __add__(self, other):
+        return _arith("+", "add", self, other)
+
+    def __radd__(self, other):
+        return _arith("+", "add", other, self)
+
+    def __sub__(self, other):
+        return _arith("-", "sub", self, other)
+
+    def __rsub__(self, other):
+        return _arith("-", "sub", other, self)
+
+    def __mul__(self, other):
+        return _arith("*", "mul", self, other)
+
+    def __rmul__(self, other):
+        return _arith("*", "mul", other, self)
+
+    def __truediv__(self, other):
+        return _arith("/", "div", self, other)
+
+    def __rtruediv__(self, other):
+        return _arith("/", "div", other, self)
+
+    def __neg__(self):
+        if not _is_arithmetic_operand(self):
+            raise TypeError(_NO_INFIX_MSG.format(op="unary -", types=f"{self.type} nodes"))
+        return _infix("neg", self)
+
     __pow__ = __rpow__ = _reject("**")
-    __neg__ = _reject("unary -")
     __matmul__ = __rmatmul__ = _reject("@")
+    __iadd__ = _reject_inplace("+=")
+    __isub__ = _reject_inplace("-=")
+    __imul__ = _reject_inplace("*=")
+    __itruediv__ = _reject_inplace("/=")
 
     def __repr__(self) -> str:  # concise, id-first
         return f"{self.type}(id={self.id!r})"
@@ -545,7 +626,52 @@ class Array(GNode):
         )
 
     def __len__(self) -> int:
+        """Record-time element count (a plain int; records no command).
+
+        Enables `for k in range(len(arr)): arr[k]` loops that unroll into
+        commands. Record-only arrays (extension outputs) report 0.
+        """
         return len(self._elements)
+
+    def __getitem__(self, key):
+        """`arr[i]` records `\\get-array-element arr i` (i: int or Scalar).
+
+        A literal negative index is normalized against the record-time length
+        (the engine has no negative indexing). With `__len__`, this also makes
+        `for el in arr:` work via the sequence protocol, one command per
+        element.
+        """
+        if isinstance(key, slice):
+            raise TypeError(
+                "geomatic has no array-slice command; index elements one at a "
+                "time (arr[i]) or build a new \\array from the elements you need"
+            )
+        if isinstance(key, (int, np.integer)) and not isinstance(key, bool):
+            key = int(key)
+            if key < 0:
+                if not self._elements:
+                    raise IndexError(
+                        f"cannot normalize negative index {key}: array length "
+                        "is unknown at record time"
+                    )
+                key %= len(self._elements)
+        elif not isinstance(key, Scalar):
+            raise TypeError(
+                f"array index must be an int or a Scalar node, got {type(key).__name__!r}"
+            )
+        return _infix("get-array-element", self, key)
+
+    def __setitem__(self, key, value):
+        raise TypeError(
+            "geomatic arrays are reactive outputs and have no element-assignment "
+            "command; build a new \\array instead"
+        )
+
+    def __iter__(self):
+        # BaseModel.__iter__ yields pydantic fields; iterate elements instead,
+        # recording one \get-array-element per element.
+        for k in range(len(self._elements)):
+            yield self[k]
 
 
 # ---------------------------------------------------------------------------

@@ -34,21 +34,39 @@ m = \mid-point c.center b
   `reduce_sum`). Names that would shadow Python builtins get a trailing
   underscore: `abs_`, `pow_`, `min_`, `max_`, `round_`, `bool_`, `filter_`,
   `and_`, `or_`, `not_`, `complex_`, `help_`.
-- **Output ids**: a simple assignment target names the output —
+- **Output ids**: an assignment target names the output —
   `fwd_traj = gm.point(3, 4)` emits `fwd-traj = \point 3 4` (underscores
-  become dashes). The optional `out="my-id"` keyword overrides it. Anything
-  ambiguous or unsafe (no assignment, tuple/attribute targets, loop reuse of a
-  name, a name shaped like an engine auto-name, a taken id) silently falls
-  back to a dashed auto-id (`num-0`, `p-1`). Explicit ids must match the DSL
-  grammar: start with a letter, letters/digits/dashes, **no underscores** —
-  and must not look like engine auto-names (`num0`, `p3`, `text1`): the
-  engine generates those for internal nodes (property accessors, literals,
-  array elements) and a collision creates a reactive cycle that hangs the
-  tab. pygeomatic's dashed ids can never collide. Inference reads the caller's
+  become dashes), and multi-target assignment works at any arity:
+  `a, b, c = gm.scalar(1), gm.scalar(2), gm.scalar(3)` names all three. The
+  optional `out="my-id"` keyword overrides it. Chained `a = b = gm.scalar(1)`
+  records one command per target (`a = \scalar 1`, `b = \scalar 1`; the
+  python object carries the first id, the store holds a clone per extra).
+  Anything ambiguous or unsafe (no assignment, attribute targets, loop reuse
+  of a name, a name shaped like an engine auto-name, a taken id) silently
+  falls back to a dashed auto-id (`num-0`, `p-1`). Explicit ids must match the DSL grammar:
+  start with a letter, letters/digits/dashes, **no underscores** — and must
+  not look like engine auto-names (`num0`, `p3`, `text1`): the engine
+  generates those for internal nodes (property accessors, literals, array
+  elements) and a collision creates a reactive cycle that hangs the tab.
+  pygeomatic's dashed ids can never collide. Inference reads the caller's
   bytecode, not its source, so it behaves identically everywhere: files,
   `run_generated`, the REPL, `python -c`, notebooks, `exec`'d strings.
-- **No infix arithmetic**: `a + b` on nodes raises; use `gm.add(a, b)` etc.,
-  so each Python call is exactly one DSL line (the DSL forbids nesting).
+- **Infix arithmetic** works on Scalar / Complex / Array nodes (with number
+  literals on either side): `c = a + b` records `c = \add a b`; `- * /` and
+  unary `-` map to `\sub`, `\mul`, `\div`, `\neg`, and Arrays broadcast
+  elementwise. Chains of the same associative op fuse into ONE variadic
+  command: `d = a + b + c` emits `d = \add a b c`. `**`/`@`, in-place ops
+  (`acc += 2` would silently diverge from the reactive node — write
+  `total = acc + 2`), and infix on any other node type (Point, Circle, ...)
+  raise instructively — use the explicit functions (`gm.pow_`,
+  `gm.translate`, ...).
+- **Array indexing / iteration**: `x = arr[i]` records
+  `x = \get-array-element arr i` (`i` an int or a Scalar node; literal
+  negative indices are normalized against the record-time length — the engine
+  has no negative indexing). `len(arr)` is a plain record-time int (records
+  nothing), so `for k in range(len(arr)): arr[k]` and `for el in arr:` unroll
+  into one command per element. Slices and `arr[i] = v` have no DSL
+  equivalent and raise.
 - **Node properties** are exactly the whitelist in
   [nodeProperties.ts](../src/lib/geomatic/state/nodeProperties.ts)
   (`p.x`, `circ.center`, `circ.center.x`, ...); each access returns a node that

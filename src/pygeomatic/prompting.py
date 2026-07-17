@@ -96,21 +96,33 @@ Do not import anything, do not create a Store, do not call `gm.emit` — only
 define `build`.
 
 Rules (violations raise errors):
-1. Arguments are POSITIONAL, in the documented order. A simple assignment
-   target names the output node: `fwd_traj = gm.point(3, 4)` emits
-   `fwd-traj = \\point 3 4` (python underscores become DSL dashes), so
-   descriptive variable names give descriptive ids for free. The only
-   keyword argument is `out="my-id"` for an id different from the variable.
-   Explicit ids must start with a letter and contain only letters, digits
-   and dashes — NEVER underscores (`fwd-traj`, not `fwd_traj`). Never use
-   ids shaped like `<prefix><digits>` (`num0`, `p3`, `text1`): the engine
-   auto-generates those for internal nodes and they collide (inferred names
-   of that shape are skipped automatically). Prefer descriptive names.
-2. NO infix arithmetic on nodes: never `a + b`, `a * 2`, `-a` — use
-   `gm.add(a, b)`, `gm.mul(a, 2)`, `gm.neg(a)`. Plain Python numbers may use
-   normal arithmetic freely (e.g. in a `for` loop computing coordinates);
-   only node objects must go through gm functions. Each gm call becomes
-   exactly one DSL command, so prefer fewer, well-chosen calls.
+1. Arguments are POSITIONAL, in the documented order. An assignment target
+   names the output node: `fwd_traj = gm.point(3, 4)` emits
+   `fwd-traj = \\point 3 4` (python underscores become DSL dashes), and
+   multi-target assignment names every output
+   (`a, b = gm.scalar(1), gm.scalar(2)`), so descriptive variable names give
+   descriptive ids for free. The only keyword argument is `out="my-id"` for
+   an id different from the variable. Explicit ids must start with a letter
+   and contain only letters, digits and dashes — NEVER underscores
+   (`fwd-traj`, not `fwd_traj`). Never use ids shaped like
+   `<prefix><digits>` (`num0`, `p3`, `text1`): the engine auto-generates
+   those for internal nodes and they collide (inferred names of that shape
+   are skipped automatically). Prefer descriptive names.
+2. Infix arithmetic works on Scalar/Complex/Array nodes and records the
+   overload commands: `c = a + b` emits `c = \\add a b`; `- * /` and unary
+   `-` map to \\sub, \\mul, \\div, \\neg; number literals may sit on either
+   side (`2 * a`); Arrays broadcast elementwise. Same-op chains fuse into
+   one variadic command (`d = a + b + c` emits `d = \\add a b c`).
+   `x = arr[i]` emits `x = \\get-array-element arr i` (int or Scalar index;
+   literal negative indices are normalized), and `len(arr)` is a plain
+   python int recorded as nothing, so `for k in range(len(arr)):` unrolls.
+   Chained `a = b = gm.scalar(1)` records one command per target name.
+   NOT supported (use the explicit functions): `**` (`gm.pow_`), `@`,
+   in-place ops (`acc += 2` raises — assign a NEW name: `total = acc + 2`),
+   infix on other node types (Point, Circle, ...), slices, `arr[i] = v`.
+   Plain Python numbers still use normal arithmetic freely (e.g.
+   loop-computed coordinates); a command is recorded only when a node is
+   involved.
 3. Node properties are limited to the full whitelist under "Accessible node
    properties" below; a few examples: `p.x`, `circ.center`, `circ.center.x`,
    `tri.vertices`, `arr.length`. Nothing outside that list is accessible.

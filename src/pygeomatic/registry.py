@@ -27,8 +27,12 @@ from functools import wraps
 from typing import Any, Callable, Optional, Sequence
 
 from .coercions import NODE_COERCIONS, VALUE_COERCIONS, coerce_gnode, coercions_enabled
-from .inference import infer_out_name
-from .nodes import Bool, GNode, Text
+from .inference import infer_out_names
+from .nodes import Bool, GNode, Text, _infix_call
+
+# Variadic + associative commands whose anonymous infix intermediates may be
+# folded into one line (`d = a + b + c` → `d = \add a b c`).
+_FUSABLE_KEYWORDS = frozenset({"add", "mul"})
 from .store import ArgToken, Store, TextLit, current_store, sanitize_text
 
 
@@ -390,11 +394,29 @@ def geomatic_fn(
                     # produces a Dummy, which is never assigned an id.
                     store.record(keyword, tokens, None)
                     return node
+                extra_ids: list[str] = []
                 if out is None:
-                    out = infer_out_name(sys._getframe(1), store)
+                    inferred = infer_out_names(sys._getframe(1), store)
+                    if inferred:
+                        # chained `a = b = call(...)`: first name goes to the
+                        # node, each extra gets its own cloned command below
+                        out, extra_ids = inferred[0], inferred[1:]
+                infix = _infix_call.get()
+                if infix and keyword in _FUSABLE_KEYWORDS:
+                    tokens = store.fuse_variadic(keyword, tokens)
                 node_id = store.allocate_id(node.type, out)
                 store.register(node, node_id)
-                store.record(keyword, tokens, node_id)
+                store.record(
+                    keyword,
+                    tokens,
+                    node_id,
+                    fusable=infix and out is None and keyword in _FUSABLE_KEYWORDS,
+                )
+                for extra in extra_ids:
+                    clone = node.model_copy()
+                    clone_id = store.allocate_id(clone.type, extra)
+                    store.register(clone, clone_id)
+                    store.record(keyword, list(tokens), clone_id)
                 return node
             store.record(keyword, tokens, None)
             return result

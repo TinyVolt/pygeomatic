@@ -102,11 +102,23 @@ def test_filter_mask():
     assert np.allclose(kept.numeric, [10, 30])
 
 
-def test_no_infix_arithmetic():
+def test_infix_arithmetic_records_overload_commands():
+    with gm.Store() as s:
+        a = gm.scalar(1)
+        b = gm.scalar(2)
+        c = a + b
+        assert float(c) == 3.0
+    assert gm.emit(s).splitlines()[-1] == "c = \\add a b"
+
+
+def test_infix_rejected_for_non_arithmetic_nodes():
+    p = gm.point(1, 2)
+    q = gm.point(3, 4)
+    with pytest.raises(TypeError, match="Point nodes"):
+        p + q  # noqa: B018
     a = gm.scalar(1)
-    b = gm.scalar(2)
-    with pytest.raises(TypeError, match="pygeomatic.add"):
-        a + b  # noqa: B018
+    with pytest.raises(TypeError, match="\\*\\*"):
+        a**2  # noqa: B018
 
 
 def test_identifier_validation():
