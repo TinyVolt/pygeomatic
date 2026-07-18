@@ -17,6 +17,13 @@ Example:
         print(gm.emit(s))
 """
 
+from .article import (  # noqa: F401
+    ArticleError,
+    ArticleResult,
+    article_mode,
+    compile_article,
+    run_article,
+)
 from .coercions import allow_coercions, coercions_enabled  # noqa: F401
 from .emit import emit, render_command, render_token  # noqa: F401
 from .extensions import (  # noqa: F401
@@ -83,7 +90,14 @@ from .nodes import (  # noqa: F401
     VectorField,
 )
 from .registry import REGISTRY, FunctionDef, P  # noqa: F401
-from .store import Command, Store, TextLit, current_store, reset_default_store  # noqa: F401
+from .store import (  # noqa: F401
+    Command,
+    Store,
+    TextLit,
+    current_store,
+    node,
+    reset_default_store,
+)
 from .system_nodes import (  # noqa: F401
     SYSTEM_NODE_IDS,
     SYSTEM_NODES,

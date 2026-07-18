@@ -135,6 +135,14 @@ _allow_engine_ids: ContextVar[bool] = ContextVar("pygeomatic_allow_engine_ids", 
 # an existing node (the engine's saveNode is last-write-wins).
 _macro_replay: ContextVar[bool] = ContextVar("pygeomatic_macro_replay", default=False)
 
+# Set while an article's pygeomatic code runs (article.py). Articles are read
+# back by the engine span-by-span, where reassigning an id is a core idiom
+# (`{reset to 1}(s1 = \scalar 1)`, a matrix rebound per bullet), so an explicit
+# or inferred output id may overwrite an existing node — the engine's saveNode
+# is last-write-wins. Everything else (dashed auto ids, engine-auto-shape
+# rejection, tape recording) stays authoring-strict.
+_article_replay: ContextVar[bool] = ContextVar("pygeomatic_article_replay", default=False)
+
 
 def validate_identifier(name: str) -> str:
     if not IDENTIFIER_RE.match(name):
@@ -227,8 +235,14 @@ class Store:
             # A user command may reassign a system default (e.g. the fermat macro's
             # `learning-rate = \scalar 0.5`); the engine's saveNode is last-write-wins.
             # Any OTHER duplicate is an authoring mistake and stays rejected —
-            # except inside a macro body, which runs with full engine semantics.
-            if out in self.nodes and out not in SYSTEM_NODE_IDS and not _macro_replay.get():
+            # except inside a macro body or an article, which run with full
+            # engine semantics.
+            if (
+                out in self.nodes
+                and out not in SYSTEM_NODE_IDS
+                and not _macro_replay.get()
+                and not _article_replay.get()
+            ):
                 raise ValueError(f"node id {out!r} already exists in this store")
             self.names.reserve(out)
             return out
@@ -303,6 +317,21 @@ _default_store = Store()
 
 def current_store() -> Store:
     return _current_store.get() or _default_store
+
+
+def node(node_id: str) -> GNode:
+    """The node registered under `node_id` in the active store — a system
+    default (`gm.node("p0")`), or any earlier output you didn't keep a
+    variable for."""
+    store = current_store()
+    found = store.nodes.get(node_id)
+    if found is None:
+        raise KeyError(
+            f"no node {node_id!r} in the active store — it must be a system "
+            f"default ({', '.join(sorted(SYSTEM_NODE_IDS))}) or the output of "
+            "an earlier command"
+        )
+    return found
 
 
 def reset_default_store() -> Store:

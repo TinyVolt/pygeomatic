@@ -183,6 +183,73 @@ parsing — pasted scenes contain them — but stay rejected for authored
 Extension commands parse once their manifest is loaded. A bare `\point 1 2`
 re-emits with an auto id (`p-0 = \point 1 2`): same scene, different text.
 
+## Articles: pygeomatic-in-markdown → CommandLink articles
+
+Write geomatic articles as markdown with pygeomatic Python instead of raw DSL;
+`compile_article` turns them into the `{label}(command)` span format the
+tinyvolt-web `InteractivePage` renders. The Python runs once at compile time —
+readers only ever receive deterministic DSL text.
+
+````markdown
+```pygeomatic
+origin = gm.node("p0")            # top-level code → hidden {}(...) setup spans
+a = gm.point(3, 0)
+walk = gm.line(origin, a)
+gm.hide(walk)
+
+with group("walk-x"):             # a named run of commands for prose to reveal
+    gm.highlight(walk)
+    gm.show(walk)                 # last command gets the visible label
+```
+
+Reach the point by {moving a distance}(ref:walk-x) of $3$ units.
+Or reset it inline: {set scale to 1}(scale = gm.scalar(1)).
+````
+
+- **One store per article**: all fences and inline spans run in document order
+  sharing state, so ids and auto-names stay consistent.
+- **Ref expansion**: every command of a group but the last becomes a hidden
+  `{}()` span before the visible one — a click always lands on a fully
+  set-up scene.
+- **Inline spans** (`{label}(python statement)`) are the escape hatch for
+  one-offs; article mode is last-write-wins, so `s1 = gm.scalar(1)` reassigns
+  like the DSL line it becomes.
+- **Round-trip gate**: the compiled document is replayed with `parse_dsl` in
+  document order; broken ordering or invalid DSL fails the compile, not the
+  reader.
+- Regular code fences and `$...$` math are never scanned for spans.
+
+```sh
+uv run python scripts/compile_article.py article.md -o compiled.md   # one file
+uv run python scripts/compile_articles.py articles/ dist/            # a tree
+```
+
+(equivalently `gm.compile_article(md)` in-process or `gm.run_article(md)` in a
+subprocess; both take `extensions=` / `macros=` / `allow_coercions=`.)
+
+### Publishing from a content repo (GitHub Action)
+
+A content repo publishes compiled articles with one workflow file; a compile
+error in any article fails the push and nothing is published:
+
+```yaml
+name: Publish articles
+on:
+  push: {branches: [main]}
+jobs:
+  publish:
+    permissions: {contents: write}
+    uses: TinyVolt/pygeomatic/.github/workflows/publish-articles.yml@main
+```
+
+This compiles `articles/` and force-pushes the result (plus any non-markdown
+assets) to a `dist` branch, which raw.githubusercontent.com serves with CORS.
+Inputs: `source`, `publish-branch`, `extensions`, `macros`, `allow-coercions`,
+and `pygeomatic-ref` — pin the latter to a tag or SHA for reproducible output.
+For custom pipelines, the composite action `TinyVolt/pygeomatic@<ref>` runs
+just the compile step (the `<ref>` you pin is also the exact pygeomatic
+version used).
+
 ## Extensions
 
 Geomatic extension functions (loaded in the app from a `manifest.json`, see

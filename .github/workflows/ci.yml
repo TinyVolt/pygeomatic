@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv run pytest
+
+  # The composite action end-to-end: compile the example article with the
+  # local action and check the output is a CommandLink article.
+  action-self-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          source: examples/articles
+          output: compiled
+      - name: Check compiled output
+        run: |
+          test -f compiled/vector-scaling.md
+          grep -qF '{Increase scale}(\animate scale 2)' compiled/vector-scaling.md
+          grep -qF '{vector}(\highlight v0)' compiled/vector-scaling.md
+          ! grep -q '```pygeomatic' compiled/vector-scaling.md
