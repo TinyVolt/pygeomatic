@@ -1,7 +1,6 @@
 # pygeomatic
 
-Python mirror of the geomatic DSL function library
-([src/lib/geomatic/functions/](../src/lib/geomatic/functions/)). Every public
+Python mirror of the geomatic DSL function library. Every public
 function maps 1:1 to a geomatic command; calling it computes numeric values
 (numpy) where possible **and** records the call onto a tape, from which
 `emit()` produces geomatic DSL lines deterministically.
@@ -263,12 +262,12 @@ version used).
 Once the `dist` branch exists, the article is live — readers open it at
 
 ```
-https://www.tinyvolt.com/geomatic/read/<owner>/<repo>/<article>
+https://www.tinyvolt.com/nova/<username>/<repo>/<article>
 ```
 
 where `<article>` is the markdown file's path within `dist` (the `.md`
 suffix is optional). E.g. `articles/intro.md` compiled from the repo
-`alice/vectors` is read at `/geomatic/read/alice/vectors/intro`.
+`alice/vectors` is read at `/nova/alice/vectors/intro`.
 
 If the article uses extension commands or macros, bake their URLs into the
 link you share so readers never load anything manually:
