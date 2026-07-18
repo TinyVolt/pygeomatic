@@ -1,0 +1,4007 @@
+[
+  {
+    "keyword": "_prop-center",
+    "name": "_Prop_center",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-control",
+    "name": "_Prop_control",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-control1",
+    "name": "_Prop_control1",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-control2",
+    "name": "_Prop_control2",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-endAngle",
+    "name": "_Prop_endAngle",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-im",
+    "name": "_Prop_im",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-length",
+    "name": "_Prop_length",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-numVertices",
+    "name": "_Prop_numVertices",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-p1",
+    "name": "_Prop_p1",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-p2",
+    "name": "_Prop_p2",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-radius",
+    "name": "_Prop_radius",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-radiusX",
+    "name": "_Prop_radiusX",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-radiusY",
+    "name": "_Prop_radiusY",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-re",
+    "name": "_Prop_re",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-rotation",
+    "name": "_Prop_rotation",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-startAngle",
+    "name": "_Prop_startAngle",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-value",
+    "name": "_Prop_value",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-vertices",
+    "name": "_Prop_vertices",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-x",
+    "name": "_Prop_x",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "_prop-y",
+    "name": "_Prop_y",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Uncategorized",
+    "operandTypes": null
+  },
+  {
+    "keyword": "abs",
+    "name": "Abs",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "acos",
+    "name": "Acos",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "add",
+    "name": "Add",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "and",
+    "name": "And",
+    "parameters": [
+      {
+        "name": "values",
+        "type": "Bool",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "angle",
+    "name": "Angle",
+    "parameters": [
+      {
+        "name": "point1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "vertex",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "point3",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "animate",
+    "name": "Animate",
+    "parameters": [
+      {
+        "name": "s",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "animateTo",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Transformations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-angle-mark",
+    "name": "AngleMark",
+    "parameters": [
+      {
+        "name": "line1",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "line2",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": true,
+        "default": ""
+      }
+    ],
+    "outputType": "AngleMark",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-arrow",
+    "name": "Arrow",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "padding",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": true,
+        "default": ""
+      }
+    ],
+    "outputType": "Arrow",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-curly-bracket",
+    "name": "CurlyBracket",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": true,
+        "default": ""
+      }
+    ],
+    "outputType": "CurlyBracket",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-curved-arrow",
+    "name": "CurvedArrow",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "control",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "padding",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": true,
+        "default": ""
+      }
+    ],
+    "outputType": "CurvedArrow",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-dim-line",
+    "name": "DimensionLine",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": true,
+        "default": ""
+      }
+    ],
+    "outputType": "DimensionLine",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-leader-line",
+    "name": "LeaderLine",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "LeaderLine",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-pin",
+    "name": "Pin",
+    "parameters": [
+      {
+        "name": "position",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": true,
+        "default": ""
+      }
+    ],
+    "outputType": "Pin",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "annotate-text-box",
+    "name": "TextBox",
+    "parameters": [
+      {
+        "name": "text",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "x",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "y",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "fontSize",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 14
+      },
+      {
+        "name": "width",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "height",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "TextBox",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "arange",
+    "name": "ARange",
+    "parameters": [
+      {
+        "name": "start",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "end",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 5
+      },
+      {
+        "name": "step",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 1
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "arc",
+    "name": "Arc",
+    "parameters": [
+      {
+        "name": "center",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "p0"
+      },
+      {
+        "name": "radius",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 2
+      },
+      {
+        "name": "startAngle",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "endAngle",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 90
+      }
+    ],
+    "outputType": "Arc",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "area-circle",
+    "name": "AreaCircle",
+    "parameters": [
+      {
+        "name": "circle",
+        "type": "Circle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "area-triangle",
+    "name": "AreaTriangle",
+    "parameters": [
+      {
+        "name": "triangle",
+        "type": "Triangle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "arg",
+    "name": "Arg",
+    "parameters": [
+      {
+        "name": "z",
+        "type": "Complex",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Complex Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "array",
+    "name": "Array",
+    "parameters": [
+      {
+        "name": "element1",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Arrays",
+    "operandTypes": null
+  },
+  {
+    "keyword": "asin",
+    "name": "Asin",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "atan",
+    "name": "Atan",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "atan2",
+    "name": "Atan2",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "backprop",
+    "name": "Backprop",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "bezier-cubic",
+    "name": "BezierCubic",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "control1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "control2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "BezierCubic",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "bezier-quadratic",
+    "name": "BezierQuadratic",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "control",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "BezierQuadratic",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "bin-to-dec-ones-complement",
+    "name": "BinToDecOneComplement",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "bin-to-dec-twos-complement",
+    "name": "BinToDecTwoComplement",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "bin-to-dec-unsigned",
+    "name": "BinToDecUnsigned",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "bisect-angle",
+    "name": "AngleBisector",
+    "parameters": [
+      {
+        "name": "line1",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "line2",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Line",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "bool",
+    "name": "Bool",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "ceil",
+    "name": "Ceil",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "centroid",
+    "name": "Centroid",
+    "parameters": [
+      {
+        "name": "triangle",
+        "type": "Triangle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "circle",
+    "name": "Circle",
+    "parameters": [
+      {
+        "name": "center",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "p0"
+      },
+      {
+        "name": "radius",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 2
+      }
+    ],
+    "outputType": "Circle",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "circular-arange",
+    "name": "CircularARange",
+    "parameters": [
+      {
+        "name": "n",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 10
+      },
+      {
+        "name": "r",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 1
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "circumcenter",
+    "name": "Circumcenter",
+    "parameters": [
+      {
+        "name": "triangle",
+        "type": "Triangle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "clear",
+    "name": "Clear",
+    "parameters": [],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "clear-trail",
+    "name": "ClearTrail",
+    "parameters": [
+      {
+        "name": "trailId",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Curves & Plotting",
+    "operandTypes": null
+  },
+  {
+    "keyword": "complex",
+    "name": "Complex",
+    "parameters": [
+      {
+        "name": "re",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "im",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Complex",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Complex Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "conj",
+    "name": "Conjugate",
+    "parameters": [
+      {
+        "name": "z",
+        "type": "Complex",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Complex",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Complex Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "convex-hull",
+    "name": "ConvexHull",
+    "parameters": [
+      {
+        "name": "point1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "point2",
+        "type": "Point",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Polygon",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Polygons",
+    "operandTypes": null
+  },
+  {
+    "keyword": "copy",
+    "name": "Copy",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "cos",
+    "name": "Cos",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "cumsum",
+    "name": "Cumsum",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "deg2rad",
+    "name": "Deg2Rad",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "distance",
+    "name": "Distance",
+    "parameters": [
+      {
+        "name": "point1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "point2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "p0"
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "div",
+    "name": "Divide",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "ellipse",
+    "name": "Ellipse",
+    "parameters": [
+      {
+        "name": "center",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "p0"
+      },
+      {
+        "name": "radiusX",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 3
+      },
+      {
+        "name": "radiusY",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 2
+      },
+      {
+        "name": "rotation",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "Ellipse",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "ellipse-from-foci",
+    "name": "EllipseFromFociAndStringLength",
+    "parameters": [
+      {
+        "name": "focus1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "focus2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "stringLength",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Ellipse",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "eq",
+    "name": "Equal",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "eval-ode",
+    "name": "EvalODE",
+    "parameters": [
+      {
+        "name": "trajectory",
+        "type": "Trajectory",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "t",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "ODEs",
+    "operandTypes": null
+  },
+  {
+    "keyword": "evaluate-polynomial",
+    "name": "EvaluatePolynomial",
+    "parameters": [
+      {
+        "name": "polynomial",
+        "type": "Polynomial",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "x",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Curves & Plotting",
+    "operandTypes": null
+  },
+  {
+    "keyword": "exp",
+    "name": "Exp",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "fft",
+    "name": "Fft",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Complex Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "filter",
+    "name": "Filter",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "mask",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "floor",
+    "name": "Floor",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "flow",
+    "name": "Flow",
+    "parameters": [
+      {
+        "name": "point",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "out",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p0",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "t1",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "steps",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 200
+      }
+    ],
+    "outputType": "Trajectory",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "ODEs",
+    "operandTypes": null
+  },
+  {
+    "keyword": "fp-to-bin",
+    "name": "FpToBool",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "nBits",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 32
+      }
+    ],
+    "outputType": "Text",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "ge",
+    "name": "GreaterEqual",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "get-array-element",
+    "name": "GetArrayElement",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "index",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Arrays",
+    "operandTypes": null
+  },
+  {
+    "keyword": "gradient-descent-step",
+    "name": "GradientDescent",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "gt",
+    "name": "GreaterThan",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "help",
+    "name": "Help",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "hide",
+    "name": "Hide",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "highlight",
+    "name": "Highlight",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "ifft",
+    "name": "InverseFFT",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Complex Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "imag",
+    "name": "Imag",
+    "parameters": [
+      {
+        "name": "z",
+        "type": "Complex",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Complex Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "incenter",
+    "name": "Incenter",
+    "parameters": [
+      {
+        "name": "triangle",
+        "type": "Triangle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "int-to-bin",
+    "name": "IntToBool",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "nBits",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 8
+      },
+      {
+        "name": "useTwosComplement",
+        "type": "Bool",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "T"
+      }
+    ],
+    "outputType": "Text",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "intersection-circle-circle",
+    "name": "CircleCircleIntersection",
+    "parameters": [
+      {
+        "name": "circle1",
+        "type": "Circle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "circle2",
+        "type": "Circle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Intersections",
+    "operandTypes": null
+  },
+  {
+    "keyword": "intersection-line-bezier-quadratic",
+    "name": "LineBezierQuadraticIntersection",
+    "parameters": [
+      {
+        "name": "line",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "bezier",
+        "type": "BezierQuadratic",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Intersections",
+    "operandTypes": null
+  },
+  {
+    "keyword": "intersection-line-circle",
+    "name": "LineCircleIntersection",
+    "parameters": [
+      {
+        "name": "line",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "circle",
+        "type": "Circle",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Intersections",
+    "operandTypes": null
+  },
+  {
+    "keyword": "intersection-line-ellipse",
+    "name": "LineEllipseIntersection",
+    "parameters": [
+      {
+        "name": "line",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "ellipse",
+        "type": "Ellipse",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Intersections",
+    "operandTypes": null
+  },
+  {
+    "keyword": "intersection-line-line",
+    "name": "LineLineIntersection",
+    "parameters": [
+      {
+        "name": "line1",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "line2",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Intersections",
+    "operandTypes": null
+  },
+  {
+    "keyword": "le",
+    "name": "LessEqual",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "line",
+    "name": "Line",
+    "parameters": [
+      {
+        "name": "point1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "point2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Line",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "linspace",
+    "name": "Linspace",
+    "parameters": [
+      {
+        "name": "start",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "end",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 1
+      },
+      {
+        "name": "n",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 10
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "log",
+    "name": "Log",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "log10",
+    "name": "Log10",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "lt",
+    "name": "LessThan",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "max",
+    "name": "Max",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "mid-point",
+    "name": "Midpoint",
+    "parameters": [
+      {
+        "name": "point1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "point2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "min",
+    "name": "Min",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "minimize",
+    "name": "Minimize",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "num-iterations",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "mod",
+    "name": "Mod",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "mul",
+    "name": "Multiply",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "neg",
+    "name": "Negate",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "not",
+    "name": "Not",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Bool",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "ones",
+    "name": "Ones",
+    "parameters": [
+      {
+        "name": "n",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 1
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "ones-like",
+    "name": "OnesLike",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "or",
+    "name": "Or",
+    "parameters": [
+      {
+        "name": "values",
+        "type": "Bool",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "param",
+    "name": "Param",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "partial",
+    "name": "Partial",
+    "parameters": [
+      {
+        "name": "target",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "param",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "plot",
+    "name": "Plot",
+    "parameters": [
+      {
+        "name": "x",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "y",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Plot",
+    "isImperative": false,
+    "isAsync": true,
+    "category": "Curves & Plotting",
+    "operandTypes": null
+  },
+  {
+    "keyword": "plot-inverse",
+    "name": "PlotInverse",
+    "parameters": [
+      {
+        "name": "x",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "y",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Plot",
+    "isImperative": false,
+    "isAsync": true,
+    "category": "Curves & Plotting",
+    "operandTypes": null
+  },
+  {
+    "keyword": "point",
+    "name": "Point",
+    "parameters": [
+      {
+        "name": "x",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      },
+      {
+        "name": "y",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "polygon",
+    "name": "Polygon",
+    "parameters": [
+      {
+        "name": "vertex1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "vertex2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "vertex3",
+        "type": "Point",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Polygon",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Polygons",
+    "operandTypes": null
+  },
+  {
+    "keyword": "polygon-from-side",
+    "name": "RegularPolygonFromSide",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "n",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 6
+      }
+    ],
+    "outputType": "Polygon",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Polygons",
+    "operandTypes": null
+  },
+  {
+    "keyword": "polyline",
+    "name": "Polyline",
+    "parameters": [
+      {
+        "name": "point1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "point2",
+        "type": "Point",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Polygons",
+    "operandTypes": null
+  },
+  {
+    "keyword": "polynomial",
+    "name": "Polynomial",
+    "parameters": [
+      {
+        "name": "a0",
+        "type": "Scalar",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Polynomial",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Curves & Plotting",
+    "operandTypes": null
+  },
+  {
+    "keyword": "pow",
+    "name": "Power",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "project-point",
+    "name": "ProjectPointOnLine",
+    "parameters": [
+      {
+        "name": "point",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "line",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "rad2deg",
+    "name": "Rad2Deg",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "real",
+    "name": "Real",
+    "parameters": [
+      {
+        "name": "z",
+        "type": "Complex",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Complex Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reciprocal",
+    "name": "Reciprocal",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "rectangle",
+    "name": "Rectangle",
+    "parameters": [
+      {
+        "name": "bottomLeft",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "p0"
+      },
+      {
+        "name": "width",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 3
+      },
+      {
+        "name": "height",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 2
+      },
+      {
+        "name": "angle",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "Polygon",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Polygons",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reduce-max",
+    "name": "ReduceMax",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dim",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reduce-mean",
+    "name": "ReduceMean",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dim",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reduce-min",
+    "name": "ReduceMin",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dim",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reduce-std",
+    "name": "ReduceStd",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dim",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reduce-sum",
+    "name": "ReduceSum",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dim",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reduce-var",
+    "name": "ReduceVar",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dim",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reevaluate",
+    "name": "Reevaluate",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reflect-point",
+    "name": "ReflectPointAcrossLine",
+    "parameters": [
+      {
+        "name": "point",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "line",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Point",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "regular-polygon",
+    "name": "RegularPolygon",
+    "parameters": [
+      {
+        "name": "center",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "p0"
+      },
+      {
+        "name": "radius",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 2
+      },
+      {
+        "name": "numVertices",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 6
+      },
+      {
+        "name": "startAngle",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "RegularPolygon",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Polygons",
+    "operandTypes": null
+  },
+  {
+    "keyword": "relu",
+    "name": "ReLU",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "remove",
+    "name": "Remove",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "reshape",
+    "name": "Reshape",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dim",
+        "type": "Scalar",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "rotate",
+    "name": "Rotate",
+    "parameters": [
+      {
+        "name": "obj",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "center",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "angle",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Transformations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "round",
+    "name": "Round",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "scalar",
+    "name": "Scalar",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "set-fill",
+    "name": "SetFill",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "fill",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "set-stroke",
+    "name": "SetStroke",
+    "parameters": [
+      {
+        "name": "node",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "stroke",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "show",
+    "name": "Show",
+    "parameters": [
+      {
+        "name": "id",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Special Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "sigmoid",
+    "name": "Sigmoid",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "sign",
+    "name": "Sign",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "simulate-sde",
+    "name": "SimulateSDE",
+    "parameters": [
+      {
+        "name": "t",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "x",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "drift",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "diffusion",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "x0",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "t1",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "steps",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 200
+      },
+      {
+        "name": "seed",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      }
+    ],
+    "outputType": "Trajectory",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "ODEs",
+    "operandTypes": null
+  },
+  {
+    "keyword": "sin",
+    "name": "Sin",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "slope-of-line",
+    "name": "SlopeOfLine",
+    "parameters": [
+      {
+        "name": "line",
+        "type": "Line",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Planar Geometry",
+    "operandTypes": null
+  },
+  {
+    "keyword": "softmax",
+    "name": "Softmax",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "solve-ode",
+    "name": "SolveODE",
+    "parameters": [
+      {
+        "name": "t",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "y",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dydt",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "y0",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "t1",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "steps",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 200
+      }
+    ],
+    "outputType": "Trajectory",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "ODEs",
+    "operandTypes": null
+  },
+  {
+    "keyword": "sqrt",
+    "name": "Sqrt",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "square",
+    "name": "Square",
+    "parameters": [
+      {
+        "name": "bottomLeft",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "p0"
+      },
+      {
+        "name": "side",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 2
+      },
+      {
+        "name": "angle",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "Polygon",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Polygons",
+    "operandTypes": null
+  },
+  {
+    "keyword": "sub",
+    "name": "Subtract",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Overloaded Functions",
+    "operandTypes": [
+      "Scalar",
+      "Complex"
+    ]
+  },
+  {
+    "keyword": "tan",
+    "name": "Tan",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "tangent",
+    "name": "Tangent",
+    "parameters": [
+      {
+        "name": "curve",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "x",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "length",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 2
+      }
+    ],
+    "outputType": "Line",
+    "isImperative": false,
+    "isAsync": true,
+    "category": "Tangents",
+    "operandTypes": null
+  },
+  {
+    "keyword": "tanh",
+    "name": "Tanh",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "text",
+    "name": "Text",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Text",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "trail",
+    "name": "Trail",
+    "parameters": [
+      {
+        "name": "pointId",
+        "type": "Any",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Trail",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Curves & Plotting",
+    "operandTypes": null
+  },
+  {
+    "keyword": "translate",
+    "name": "Translate",
+    "parameters": [
+      {
+        "name": "obj",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dx",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dy",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Any",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Transformations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "translate-array",
+    "name": "TranslateArray",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dx",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "dy",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Transformations",
+    "operandTypes": null
+  },
+  {
+    "keyword": "triangle",
+    "name": "Triangle",
+    "parameters": [
+      {
+        "name": "vertex1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "vertex2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "vertex3",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Triangle",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "uint-to-bin",
+    "name": "UIntToBin",
+    "parameters": [
+      {
+        "name": "value",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "nBits",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 8
+      }
+    ],
+    "outputType": "Text",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "vector-field",
+    "name": "VectorField",
+    "parameters": [
+      {
+        "name": "xId",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "yId",
+        "type": "Any",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "VectorField",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "x-coord",
+    "name": "XCoord",
+    "parameters": [
+      {
+        "name": "point",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "xor",
+    "name": "Xor",
+    "parameters": [
+      {
+        "name": "a",
+        "type": "Bool",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "b",
+        "type": "Bool",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Bool",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Boolean & Bitwise",
+    "operandTypes": null
+  },
+  {
+    "keyword": "y-coord",
+    "name": "YCoord",
+    "parameters": [
+      {
+        "name": "point",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Scalar",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Scalar Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "zero-grad",
+    "name": "ZeroGrad",
+    "parameters": [],
+    "outputType": "Dummy",
+    "isImperative": true,
+    "isAsync": false,
+    "category": "Autograd & Optimization",
+    "operandTypes": null
+  },
+  {
+    "keyword": "zeros",
+    "name": "Zeros",
+    "parameters": [
+      {
+        "name": "n",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 1
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  },
+  {
+    "keyword": "zeros-like",
+    "name": "ZerosLike",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Tensor Functions",
+    "operandTypes": null
+  }
+]

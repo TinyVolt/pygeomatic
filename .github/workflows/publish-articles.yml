@@ -1,0 +1,87 @@
+# Reusable workflow for content repos: compile pygeomatic-in-markdown articles
+# and publish the compiled tree to a branch (default `dist`), which
+# raw.githubusercontent.com serves with CORS — ready to fetch.
+#
+# Consumer workflow (in the content repo):
+#
+#   name: Publish articles
+#   on:
+#     push: {branches: [main]}
+#   jobs:
+#     publish:
+#       permissions: {contents: write}
+#       uses: TinyVolt/pygeomatic/.github/workflows/publish-articles.yml@main
+#
+# A compile error in any article fails the run (with file + line on stderr)
+# and nothing is published.
+
+name: Publish pygeomatic articles
+
+on:
+  workflow_call:
+    inputs:
+      source:
+        description: Directory containing the markdown articles.
+        type: string
+        default: articles
+      publish-branch:
+        description: Branch the compiled tree is force-pushed to.
+        type: string
+        default: dist
+      extensions:
+        description: Whitespace-separated extension manifest.json paths or URLs.
+        type: string
+        default: ''
+      macros:
+        description: Whitespace-separated macro JSON paths or URLs.
+        type: string
+        default: ''
+      allow-coercions:
+        description: Permit engine type-coercions.
+        type: boolean
+        default: false
+      pygeomatic-ref:
+        description: Git ref of TinyVolt/pygeomatic to compile with (pin a tag or SHA for reproducible output).
+        type: string
+        default: main
+
+jobs:
+  compile-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the content repo
+        uses: actions/checkout@v4
+
+      - name: Check out pygeomatic
+        uses: actions/checkout@v4
+        with:
+          repository: TinyVolt/pygeomatic
+          ref: ${{ inputs.pygeomatic-ref }}
+          path: .pygeomatic
+
+      - name: Compile articles
+        uses: ./.pygeomatic
+        with:
+          source: ${{ inputs.source }}
+          output: _compiled
+          extensions: ${{ inputs.extensions }}
+          macros: ${{ inputs.macros }}
+          allow-coercions: ${{ inputs.allow-coercions }}
+
+      - name: Publish to the ${{ inputs.publish-branch }} branch
+        shell: bash
+        env:
+          BRANCH: ${{ inputs.publish-branch }}
+          TOKEN: ${{ github.token }}
+        run: |
+          cd _compiled
+          git init --quiet -b "$BRANCH"
+          git add -A
+          git -c user.name="github-actions[bot]" \
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+              commit --quiet -m "Compiled articles from $GITHUB_SHA"
+          git push --force --quiet \
+            "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            "HEAD:refs/heads/$BRANCH"

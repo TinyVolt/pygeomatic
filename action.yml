@@ -1,0 +1,54 @@
+name: Compile pygeomatic articles
+description: >
+  Compile pygeomatic-in-markdown articles (```pygeomatic fences, group refs,
+  inline Python spans) into geomatic {label}(command) articles. The Python runs
+  here, at publish time; only deterministic DSL text reaches the output. The
+  ref you pin this action to (`TinyVolt/pygeomatic@<ref>`) is also the exact
+  pygeomatic version the articles compile with.
+
+inputs:
+  source:
+    description: Directory containing the markdown articles (searched recursively).
+    default: articles
+  output:
+    description: Directory the compiled tree is written to.
+    default: dist
+  extensions:
+    description: Whitespace-separated extension manifest.json paths or URLs.
+    default: ''
+  macros:
+    description: Whitespace-separated macro JSON paths or URLs (downloadMacro format).
+    default: ''
+  allow-coercions:
+    description: Permit engine type-coercions ('true'/'false'; default strict exact types).
+    default: 'false'
+  python-version:
+    description: Python version to compile with.
+    default: '3.12'
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install pygeomatic (pinned to this action's ref)
+      shell: bash
+      run: python -m pip install --quiet "$GITHUB_ACTION_PATH"
+
+    - name: Compile articles
+      shell: bash
+      env:
+        SOURCE: ${{ inputs.source }}
+        OUTPUT: ${{ inputs.output }}
+        EXTENSIONS: ${{ inputs.extensions }}
+        MACROS: ${{ inputs.macros }}
+        ALLOW_COERCIONS: ${{ inputs.allow-coercions }}
+      run: |
+        args=()
+        for m in $EXTENSIONS; do args+=(--ext "$m"); done
+        for m in $MACROS; do args+=(--macros "$m"); done
+        if [ "$ALLOW_COERCIONS" = "true" ]; then args+=(--allow-coercions); fi
+        python "$GITHUB_ACTION_PATH/scripts/compile_articles.py" \
+          "$SOURCE" "$OUTPUT" "${args[@]}"

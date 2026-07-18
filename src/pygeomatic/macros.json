@@ -1,0 +1,165 @@
+[
+  {
+    "macro": "fermat-point-of-a-triangle",
+    "commands": [
+      "\\point 0 3",
+      "\\point 5 0",
+      "\\triangle p0 p1 p2",
+      "p = \\point 2 -1",
+      "\\param p",
+      "points = \\array p0 p1 p2",
+      "learning-rate = \\scalar 0.5",
+      "\\line p points"
+    ]
+  },
+  {
+    "macro": "fermat-train-step",
+    "commands": [
+      "dists = \\distance p points",
+      "loss = \\reduce-sum dists",
+      "\\zero-back-step loss"
+    ]
+  },
+  {
+    "macro": "gradient-of-an-angle",
+    "commands": [
+      "t = \\triangle a b c",
+      "\\highlight a",
+      "\\param a",
+      "loss = \\angle b a c",
+      "\\backprop loss"
+    ]
+  },
+  {
+    "macro": "mean-squared-loss y target",
+    "commands": [
+      "y2 = \\pow y 2",
+      "diff = \\sub y2 target",
+      "lossTimes2 = \\pow diff 2",
+      "loss = \\div lossTimes2 2"
+    ]
+  },
+  {
+    "macro": "square-root-of-3",
+    "commands": [
+      "x = \\scalar 3",
+      "y = \\scalar 3",
+      "target = \\scalar 3",
+      "\\param y",
+      "\\point x y",
+      "\\plot-sqrt"
+    ]
+  },
+  {
+    "macro": "plot-sqrt",
+    "commands": [
+      "a = \\point 0 0",
+      "b = \\point 0 1",
+      "c = \\point 4 2",
+      "\\hide a b c",
+      "\\bezier-quadratic a b c",
+      "b1 = \\point 0 -1",
+      "c1 = \\point 4 -2",
+      "\\hide b1 c1",
+      "\\bezier-quadratic a b1 c1"
+    ]
+  },
+  {
+    "macro": "get-uniform-radian-angles nAny",
+    "commands": [
+      "n = \\floor nAny",
+      "n-minus-one = \\sub n 1",
+      "nums = \\linspace 0 n-minus-one n",
+      "fractions = \\div nums n",
+      "degrees = \\mul 360 fractions",
+      "radians = \\deg2rad degrees"
+    ]
+  },
+  {
+    "macro": "get-uniform-points-on-circle numPoints",
+    "commands": [
+      "\\get-uniform-radian-angles numPoints",
+      "r = \\scalar 2",
+      "cos = \\cos radians",
+      "sin = \\sin radians",
+      "rcos = \\mul r cos",
+      "rsin = \\mul r sin",
+      "points = \\point rcos rsin"
+    ]
+  },
+  {
+    "macro": "zero-back-step loss",
+    "commands": [
+      "\\zero-grad",
+      "\\backprop loss",
+      "\\gradient-descent-step"
+    ]
+  },
+  {
+    "macro": "peaucellier-lipkin-linkage",
+    "commands": [
+      "r1 = \\scalar 2",
+      "theta = \\scalar 0",
+      "thetaRad = \\deg2rad theta",
+      "r2 = \\scalar 5.46",
+      "p0 = \\point 0 0",
+      "p1 = \\point r1 0",
+      "cosTheta = \\cos thetaRad",
+      "sinTheta = \\sin thetaRad",
+      "r1cosTheta = \\mul r1 cosTheta",
+      "r1sinTheta = \\mul r1 sinTheta",
+      "p2x = \\add r1 r1cosTheta",
+      "p2y = \\add 0 r1sinTheta",
+      "p2 = \\point p2x p2y",
+      "line01 = \\line p0 p1",
+      "line12 = \\line p1 p2",
+      "r3 = \\mul 1.2 r1",
+      "c0 = \\circle p2 r3",
+      "c1 = \\circle p0 r2",
+      "line0 = \\intersect-circles c0 c1",
+      "pFinal = \\reflect-point p2 line0"
+    ]
+  },
+  {
+    "macro": "cardioid",
+    "commands": [
+      "\\get-uniform-points-on-circle 6",
+      "dists = \\distance points p1",
+      "\\circle points dists"
+    ]
+  },
+  {
+    "macro": "load-colors",
+    "commands": [
+      "COLOR-RED = \\text \"#F87171\"",
+      "COLOR-ORANGE = \\text \"#F97316\"",
+      "COLOR-AMBER = \\text \"#F59E0B\"",
+      "COLOR-YELLOW = \\text \"#f0e080\"",
+      "COLOR-LIME = \\text \"#84CC16\"",
+      "COLOR-GREEN = \\text \"#10B981\"",
+      "COLOR-EMERALD = \\text \"#34D399\"",
+      "COLOR-TEAL = \\text \"#14B8A6\"",
+      "COLOR-VOLT = \\text \"#41dbc9\"",
+      "COLOR-CYAN = \\text \"#22D3EE\"",
+      "COLOR-BLUE = \\text \"#6aa8ff\"",
+      "COLOR-INDIGO = \\text \"#818CF8\"",
+      "COLOR-VIOLET = \\text \"#A78BFA\"",
+      "COLOR-PURPLE = \\text \"#a988f5\"",
+      "COLOR-PINK = \\text \"#EC4899\"",
+      "COLOR-FUCHSIA = \\text \"#E879F9\"",
+      "COLOR-WHITE = \\text \"#F5F5F5\"",
+      "COLOR-GRAY = \\text \"#dddddd\"",
+      "COLOR-DARKGRAY = \\text \"#333333\"",
+      "COLOR-BLACK = \\text \"#000000\"",
+      "COLOR-TEAL-LIGHT = \\text \"#5eead4\"",
+      "COLOR-TEAL-MID = \\text \"#14b8a6\"",
+      "COLOR-TEAL-DARK = \\text \"#0f766e\"",
+      "COLOR-RED-LIGHT = \\text \"#fca5a5\"",
+      "COLOR-RED-MID = \\text \"#ef4444\"",
+      "COLOR-RED-DARK = \\text \"#b91c1c\"",
+      "COLOR-GRAY-LIGHT = \\text \"#d1d5db\"",
+      "COLOR-GRAY-MID = \\text \"#6b7280\"",
+      "COLOR-GRAY-DARK = \\text \"#374151\""
+    ]
+  }
+]
