@@ -264,6 +264,21 @@ def _segment(markdown: str) -> list[Union[_Prose, _Fence]]:
             )
             i += 1
             prose_lineno = i + 1
+        elif "```pygeomatic" in stripped:
+            # A line that MENTIONS ```pygeomatic without legally opening a
+            # fence is almost always a broken fence, not prose: invisible
+            # characters (zero-width spaces survive copy-paste from chat/web
+            # tools), indentation, or trailing text. Silently treating the
+            # block as prose makes its spans fail with baffling NameErrors.
+            # (A legit mention inside ANOTHER fence's body is safe: only a
+            # fence's opening line reaches this check.)
+            raise ArticleError(
+                i + 1,
+                "found ```pygeomatic on a line that does not open a fence — "
+                "the marker must start at the beginning of the line with "
+                "nothing else around it (check for invisible characters "
+                "such as zero-width spaces, indentation, or trailing text)",
+            )
         elif _OTHER_FENCE_RE.match(stripped):
             # A non-pygeomatic code fence: its own unscanned verbatim chunk.
             if prose:

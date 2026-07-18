@@ -224,6 +224,21 @@ def test_unclosed_fence():
         compile_article("```pygeomatic\ngm.point(1, 1)\n")
 
 
+def test_almost_fence_is_rejected_not_treated_as_prose():
+    # Zero-width space before the backticks (survives copy-paste from chat/web).
+    md = "​```pygeomatic\na = gm.point(1, 1)\n​```\n{x}(gm.highlight(a))\n"
+    with pytest.raises(ArticleError, match="line 1: .*does not open a fence"):
+        compile_article(md)
+    # Indented fence.
+    md = "  ```pygeomatic\na = gm.point(1, 1)\n```\n"
+    with pytest.raises(ArticleError, match="line 1: .*does not open a fence"):
+        compile_article(md)
+    # Trailing text after the marker.
+    md = "```pygeomatic extra\na = gm.point(1, 1)\n```\n"
+    with pytest.raises(ArticleError, match="line 1: .*does not open a fence"):
+        compile_article(md)
+
+
 def test_author_error_reports_article_line():
     md = "line one\n\n" + fence("a = gm.point(1, 1)\nb = gm.undefined_fn(a)")
     with pytest.raises(ArticleError, match="line 5: AttributeError"):
