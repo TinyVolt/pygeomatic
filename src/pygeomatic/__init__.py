@@ -99,11 +99,26 @@ from .store import (  # noqa: F401
     reset_default_store,
 )
 from .system_nodes import (  # noqa: F401
+    SYSTEM_NODE_ATTRS,
     SYSTEM_NODE_IDS,
     SYSTEM_NODES,
     SystemNode,
     register_system_nodes,
 )
+
+
+def __getattr__(name: str) -> GNode:
+    # System defaults are per-Store instances (and reassignable, last-write-
+    # wins), so `gm.p0` / `gm.learning_rate` must resolve against the ACTIVE
+    # store at access time rather than bind one instance at import.
+    node_id = SYSTEM_NODE_ATTRS.get(name)
+    if node_id is not None:
+        return current_store().nodes[node_id]
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list:
+    return sorted(set(globals()) | set(SYSTEM_NODE_ATTRS))
 
 # Import the barrels for their registration side effects, then re-export the
 # public callables.

@@ -153,6 +153,10 @@ def validate_identifier(name: str) -> str:
         )
     if _allow_engine_ids.get():
         return name
+    # `p0` matches the engine-auto shape but is a system default the engine
+    # reserves at init — reassigning it is legitimate and collision-free.
+    if name in SYSTEM_NODE_IDS:
+        return name
     m = ENGINE_AUTO_ID_RE.match(name)
     if m:
         prefix = m.group(1)

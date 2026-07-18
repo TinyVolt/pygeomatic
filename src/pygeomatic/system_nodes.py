@@ -122,6 +122,12 @@ SYSTEM_NODES: list[SystemNode] = [
 
 SYSTEM_NODE_IDS: frozenset[str] = frozenset(spec.id for spec in SYSTEM_NODES)
 
+# Python attribute name → node id (`learning_rate` → `learning-rate`), backing
+# `gm.p0` / `gm.learning_rate` module attribute access (see __init__.__getattr__).
+SYSTEM_NODE_ATTRS: dict[str, str] = {
+    spec.id.replace("-", "_"): spec.id for spec in SYSTEM_NODES
+}
+
 
 def register_system_nodes(store) -> None:
     """Seed a fresh Store with the default nodes (no commands recorded)."""
