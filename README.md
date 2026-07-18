@@ -75,6 +75,15 @@ m = \mid-point c.center b
 - **str / bool convenience**: passing a Python `str` for a Text parameter (or
   `bool` for a Bool parameter) records an implicit `\text "..."` / `\bool`
   command first, then references it.
+- **System default nodes**: every canvas (and every `Store`) starts with the
+  engine's defaults — `p0` (the origin), `T`/`F`, `learning-rate`,
+  `animation-speed`, `unit`, `grid-points`, `grid-opacity`, `grid-bg-color`,
+  `grid-origin` — so reference them directly without defining them:
+  `gm.line(gm.p0, gm.point(1, 1))` (dashed ids become underscores:
+  `gm.learning_rate`). They record no commands and resolve against the active
+  store at access time; reassigning one (`gm.scalar(0.5, out="learning-rate")`)
+  is allowed, matching the engine's last-write-wins `saveNode`. `gm.node(id)`
+  is the string-keyed equivalent.
 - **Record-only commands**: functions whose computation lives in the engine
   (plot, tangent, solve-ode/flow/simulate-sde, autograd ops, highlight/hide/...)
   record onto the tape with correct signatures but produce nodes with unknown
@@ -191,7 +200,7 @@ readers only ever receive deterministic DSL text.
 
 ````markdown
 ```pygeomatic
-origin = gm.node("p0")            # top-level code → hidden {}(...) setup spans
+origin = gm.p0                    # top-level code → hidden {}(...) setup spans
 a = gm.point(3, 0)
 walk = gm.line(origin, a)
 gm.hide(walk)
@@ -248,6 +257,25 @@ and `pygeomatic-ref` — pin the latter to a tag or SHA for reproducible output.
 For custom pipelines, the composite action `TinyVolt/pygeomatic@<ref>` runs
 just the compile step (the `<ref>` you pin is also the exact pygeomatic
 version used).
+
+### Reading published articles
+
+Once the `dist` branch exists, the article is live — readers open it at
+
+```
+https://www.tinyvolt.com/geomatic/read/<owner>/<repo>/<article>
+```
+
+where `<article>` is the markdown file's path within `dist` (the `.md`
+suffix is optional). E.g. `articles/intro.md` compiled from the repo
+`alice/vectors` is read at `/geomatic/read/alice/vectors/intro`.
+
+If the article uses extension commands or macros, bake their URLs into the
+link you share so readers never load anything manually:
+
+- `?ext=<manifest-url>` — extension manifest, loaded (sandboxed, from
+  whitelisted domains only) before the article renders.
+- `?esm=<url>` — macro definitions, fetched and registered on page load.
 
 ## Extensions
 

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from .nodes import NODE_PROPERTIES
 from .registry import REGISTRY, FunctionDef, P
+from .system_nodes import SYSTEM_NODES
 
 # Keywords whose python name would shadow a builtin get a trailing underscore.
 _BUILTIN_SHADOWS = {
@@ -71,6 +72,15 @@ def _function_reference() -> str:
         lines = "\n".join(_fn_line(f) for f in fns)
         sections.append(f"### {category}\n{lines}")
     return "\n\n".join(sections)
+
+
+def _system_node_reference() -> str:
+    lines = []
+    for spec in SYSTEM_NODES:
+        node_type = type(spec.factory()).__name__
+        attr = spec.id.replace("-", "_")
+        lines.append(f"- `gm.{attr}` ({node_type}, id `{spec.id}`): {spec.doc}")
+    return "\n".join(lines)
 
 
 def _property_reference() -> str:
@@ -145,6 +155,10 @@ def system_prompt() -> str:
     """Complete system prompt for prompt→python→DSL generation."""
     return (
         f"{_RULES}\n"
+        f"## System default nodes\n"
+        f"Every canvas starts with these nodes; reference them directly as "
+        f"`gm.<name>` (or reassign their id with `out=`) without defining "
+        f"them first:\n{_system_node_reference()}\n\n"
         f"## Accessible node properties\n{_property_reference()}\n\n"
         f"## Function reference (python signature -> output node type)\n\n"
         f"{_function_reference()}\n"
