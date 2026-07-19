@@ -11,8 +11,11 @@ Supported grammar (exactly what emit produces / the engine accepts):
 
 where an arg is a number (positional notation), a node id, a property chain
 (`v.p1.x`, whitelist-checked per node type), or — for `\\text` only — a quoted
-string. Blank lines are skipped. Define-before-use is enforced (an id must
-name an earlier output).
+string. Blank lines are skipped. An id normally names an earlier output, but —
+engine parity (CommandExecutor.createAndSaveNode) — an unknown bare id filling
+a Point/Scalar/Text parameter is auto-created (random Point/Scalar payload,
+the id itself as a Text's value) instead of erroring, so `\\line a b` works on
+a fresh store. Auto-created nodes record no command, exactly like the engine.
 
 Engine-generated ids (`p0`, `num1`, ...) are accepted here — pasted scenes
 legitimately contain them — even though pygeomatic rejects them for ids YOU
@@ -36,7 +39,7 @@ from .coercions import _coercions_enabled
 from .nodes import GNode, NODE_PROPERTIES
 from .prompting import python_name
 from .registry import REGISTRY
-from .store import _allow_engine_ids, current_store
+from .store import UnresolvedId, _allow_engine_ids, current_store
 
 _LINE_RE = re.compile(
     r"^(?:(?P<out>[A-Za-z][A-Za-z0-9-]*)\s*=\s*)?"
@@ -70,9 +73,18 @@ def _resolve_ref(tok: str, store, lineno: int, line: str):
     base = m.group("base")
     node = store.nodes.get(base)
     if node is None:
-        raise DslParseError(
-            lineno, line, f"unknown node id {base!r} — geomatic requires define-before-use"
-        )
+        if m.group("path"):
+            # Engine parity (resolvePropertyAccess): a `.prop` chain carries no
+            # type hint to auto-create its base from.
+            raise DslParseError(
+                lineno,
+                line,
+                f"unknown node id {base!r} — cannot access "
+                f"'{m.group('path').lstrip('.')}' on it",
+            )
+        # A bare unknown identifier is auto-created by the binder from the
+        # parameter type it fills (engine parity: createAndSaveNode).
+        return UnresolvedId(base)
     for field in m.group("path").lstrip(".").split(".") if m.group("path") else []:
         allowed = NODE_PROPERTIES.get(node.type, {})
         if field not in allowed:

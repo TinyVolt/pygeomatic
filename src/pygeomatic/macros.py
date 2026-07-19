@@ -35,14 +35,16 @@ from typing import Any, Optional, Union
 from .coercions import _coercions_enabled
 from .emit import _render_number
 from .inference import infer_out_name
-from .nodes import GNode
+from .nodes import GNode, IdRef
 from .prompting import python_name
 from .registry import FunctionDef, P, REGISTRY
 from .store import (
     IDENTIFIER_RE,
+    UnresolvedId,
     _allow_engine_ids,
     _macro_replay,
     current_store,
+    validate_identifier,
 )
 
 MACRO_CATEGORY = "Macros"
@@ -178,6 +180,25 @@ def _make_wrapper(macro: MacroDef, source: str):
         subs: dict[str, str] = {}
         tokens = []
         for name, arg in zip(macro.params, args):
+            if isinstance(arg, (str, UnresolvedId)):
+                # A string names a node. An existing one binds like a GNode; a
+                # missing one substitutes as a bare id and the body replay
+                # auto-creates it on first typed use (engine parity: the engine
+                # runs macro bodies through the executor line-by-line).
+                ref = arg.name if isinstance(arg, UnresolvedId) else arg
+                found = store.nodes.get(ref)
+                if found is not None:
+                    arg = found
+                else:
+                    validate_identifier(ref)
+                    if ref in macro.assigned_ids:
+                        raise ValueError(
+                            f"\\{macro.keyword}: input id {ref!r} conflicts with "
+                            "an internal macro variable"
+                        )
+                    tokens.append(IdRef(ref))
+                    subs[name] = ref
+                    continue
             if isinstance(arg, GNode):
                 if arg.id is None:
                     raise TypeError(

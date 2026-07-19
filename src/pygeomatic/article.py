@@ -41,7 +41,7 @@ from typing import Optional, Sequence, Union
 from .coercions import allow_coercions
 from .emit import emit, render_command
 from .parse import DslParseError, parse_dsl
-from .store import Store, _article_replay, current_store
+from .store import Store, _article_replay, _auto_create_enabled, current_store
 
 
 class ArticleError(ValueError):
@@ -528,6 +528,11 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
         for s in _scan_spans(part.text)
     ]
     with Store() as check, article_mode():
+        # Strict replay: auto-creating a missing Point/Scalar/Text here would
+        # mask a define-before-use violation (the reader's engine would bind
+        # the consumer to a random-valued auto-created node, not the article's
+        # later definition), so unknown ids must fail the gate.
+        auto_create_token = _auto_create_enabled.set(False)
         try:
             parse_dsl(commands)
         except DslParseError as exc:
@@ -536,6 +541,8 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
                 f"compiled article failed the parse round-trip (command "
                 f"{exc.lineno} in document order): {exc}",
             ) from exc
+        finally:
+            _auto_create_enabled.reset(auto_create_token)
         replayed = emit(check).splitlines()
     if replayed != commands:
         for i, (got, want) in enumerate(zip(replayed, commands)):
