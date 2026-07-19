@@ -15,12 +15,17 @@ Argument coercions (each keeps emission deterministic):
 - a GNode        → its id / `base.prop` reference
 - an int/float   → a numeric literal token
 - a str  (Text param)  → an implicit `\\text "..."` command is recorded first
+- a str  (any other param) → a node REFERENCE by id: the existing node under
+  that id, or — for Point/Scalar params — a fresh auto-created node (engine
+  parity: CommandExecutor.createAndSaveNode), so `gm.line("a", "b")` works on
+  ids that were never defined
 - a bool (Bool param)  → an implicit `\\bool 1|0` command is recorded first
 (`\\text` itself takes the quoted string directly — the DSL's only quoted form.)
 """
 
 from __future__ import annotations
 
+import random
 import sys
 from dataclasses import dataclass, field as dc_field
 from functools import wraps
@@ -28,12 +33,20 @@ from typing import Any, Callable, Optional, Sequence
 
 from .coercions import NODE_COERCIONS, VALUE_COERCIONS, coerce_gnode, coercions_enabled
 from .inference import infer_out_names
-from .nodes import Bool, GNode, Text, _infix_call
+from .nodes import Bool, GNode, Point, Scalar, Text, _infix_call
 
 # Variadic + associative commands whose anonymous infix intermediates may be
 # folded into one line (`d = a + b + c` → `d = \add a b c`).
 _FUSABLE_KEYWORDS = frozenset({"add", "mul"})
-from .store import ArgToken, Store, TextLit, current_store, sanitize_text
+from .store import (
+    ArgToken,
+    Store,
+    TextLit,
+    UnresolvedId,
+    _auto_create_enabled,
+    current_store,
+    sanitize_text,
+)
 
 
 class _Unset:
@@ -116,6 +129,66 @@ def _resolve_gnode(fdef: FunctionDef, p: P, arg: GNode) -> list[tuple[ArgToken, 
     raise TypeError(
         f"\\{fdef.keyword}: parameter '{p.name}' expects {p.type}, got a {got} node"
     )
+
+
+# Node types a missing id may be auto-created as (CommandExecutor.ts
+# createAndSaveNode: Point / Scalar / Text only).
+_AUTO_CREATE_TYPES = frozenset({"Point", "Scalar", "Text"})
+
+# The engine draws random payloads scaled by the live canvas bounds, capped at
+# 4 world units for scalars and 6 for point coordinates (createAndSaveScalar /
+# createAndSavePoint). pygeomatic has no canvas, so it uses the caps: a scalar
+# in [0, 2), point coordinates in [-3, 3).
+_AUTO_SCALAR_SPAN = 4.0
+_AUTO_POINT_SPAN = 6.0
+
+
+def _auto_create(name: str, node_type: str, store: Store) -> GNode:
+    """Create + register the node a missing id refers to, mirroring the
+    engine's createAndSavePoint/Scalar/Text: random payload for Point/Scalar,
+    the id itself as a Text's value. Registered in the store but NOT recorded
+    on the tape — emitted DSL references the bare id and the engine
+    auto-creates it again on replay, exactly as the TS executor does."""
+    if node_type == "Point":
+        node: GNode = Point._new(
+            (random.random() - 0.5) * _AUTO_POINT_SPAN,
+            (random.random() - 0.5) * _AUTO_POINT_SPAN,
+        )
+    elif node_type == "Scalar":
+        node = Scalar._new(random.random() * 0.5 * _AUTO_SCALAR_SPAN)
+    else:
+        node = Text._new(name)
+    node_id = store.allocate_id(node_type, name)  # validates + reserves the id
+    return store.register(node, node_id)
+
+
+def _deref_name(fdef: FunctionDef, p: P, arg: Any, store: Store) -> Any:
+    """Resolve a string node-reference — or parse.py's UnresolvedId — to a live
+    node (CommandExecutor.getInputNodeIds): the existing node under that id,
+    else an auto-created Point/Scalar/Text. A plain str filling a Text
+    parameter keeps its value semantics (implicit `\\text "..."`) and is left
+    for `_resolve_arg`; only parse-replay auto-creates Text by id. Anything
+    that isn't a name passes through unchanged."""
+    if isinstance(arg, UnresolvedId):
+        name = arg.name
+    elif isinstance(arg, str) and p.type != "Text":
+        name = arg
+    else:
+        return arg
+    found = store.nodes.get(name)
+    if found is not None:
+        return found
+    if not _auto_create_enabled.get():
+        raise TypeError(
+            f"unknown node id {name!r} — define-before-use is enforced here"
+        )
+    if p.type not in _AUTO_CREATE_TYPES:
+        raise TypeError(
+            f"\\{fdef.keyword}: parameter '{p.name}' expects {p.type}; node "
+            f"{name!r} does not exist and {p.type} cannot be auto-created "
+            "(only Point, Scalar and Text can)"
+        )
+    return _auto_create(name, p.type, store)
 
 
 def _implicit_text(value: str, store: Store) -> Text:
@@ -232,6 +305,7 @@ def _bind(
         if idx >= max_fixed:
             rest.append(a)
             continue
+        a = _deref_name(fdef, params[idx], a, store)
         if isinstance(a, GNode):
             pieces = _resolve_gnode(fdef, params[idx], a)
             for tok, val in pieces:
@@ -258,6 +332,7 @@ def _bind(
                 )
             raise TypeError(f"\\{fdef.keyword}: unknown parameter '{key}'")
         idx = name_to_index[key]
+        val = _deref_name(fdef, params[idx], val, store)
         pieces = (
             _resolve_gnode(fdef, params[idx], val)
             if isinstance(val, GNode)
@@ -326,7 +401,9 @@ def _bind(
             if isinstance(a, _Resolved):
                 tokens.append(a.token)
                 vals.append(a.value)
-            elif isinstance(a, GNode):
+                continue
+            a = _deref_name(fdef, p, a, store)
+            if isinstance(a, GNode):
                 # A coerced node in the variadic tail contributes each of its
                 # expanded pieces as a separate variadic value.
                 for tok, val in _resolve_gnode(fdef, p, a):

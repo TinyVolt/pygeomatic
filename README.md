@@ -74,6 +74,17 @@ m = \mid-point c.center b
 - **str / bool convenience**: passing a Python `str` for a Text parameter (or
   `bool` for a Bool parameter) records an implicit `\text "..."` / `\bool`
   command first, then references it.
+- **Strings as node references (auto-create)**: a `str` filling any *other*
+  parameter names a node by id — the existing node under that id, or, for
+  Point/Scalar parameters, a fresh auto-created node exactly like the engine
+  (`CommandExecutor.createAndSavePoint/Scalar`): `gm.line("a", "b")` creates
+  Points `a`, `b` with random coordinates, `gm.point("x", "y")` creates
+  Scalars `x`, `y` with random values. Auto-created nodes are store-only —
+  no tape command — so the emitted DSL references the bare id and the engine
+  auto-creates it again on replay. The same applies to unknown ids in
+  `parse_dsl` lines (`\line a b`, `\triangle a b c`), where an unknown id in
+  a Text slot also auto-creates (id becomes the value), mirroring
+  `createAndSaveText`.
 - **System default nodes**: every canvas (and every `Store`) starts with the
   engine's defaults — `p0` (the origin), `T`/`F`, `learning-rate`,
   `animation-speed`, `unit`, `grid-points`, `grid-opacity`, `grid-bg-color`,
@@ -184,8 +195,10 @@ print(gm.emit(s))   # original lines round-tripped + the new commands
 ```
 
 Grammar = exactly what emit produces (numbers, id refs, whitelist-checked
-property chains, quoted strings for `\text` only); define-before-use is
-enforced. Engine-generated ids (`p0`, `num1`, ...) are accepted while
+property chains, quoted strings for `\text` only). An unknown bare id filling
+a Point/Scalar/Text parameter is auto-created engine-style (random payload,
+Text gets its id as value); any other parameter type enforces
+define-before-use. Engine-generated ids (`p0`, `num1`, ...) are accepted while
 parsing — pasted scenes contain them — but stay rejected for authored
 `out=` ids. Failures raise `gm.DslParseError` with the line number and line.
 Extension commands parse once their manifest is loaded. A bare `\point 1 2`

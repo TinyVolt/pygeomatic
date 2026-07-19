@@ -49,6 +49,16 @@ class TextLit:
 ArgToken = Union[int, float, IdRef, PropRef, TextLit]
 
 
+@dataclass(frozen=True)
+class UnresolvedId:
+    """A bare DSL identifier that names no existing node (parse.py). The binder
+    (registry._deref_name) resolves it from the parameter type it lands in,
+    auto-creating a Point/Scalar/Text exactly like the engine's
+    CommandExecutor.createAndSaveNode."""
+
+    name: str
+
+
 @dataclass
 class Command:
     """One geomatic DSL line: `output_id = \\keyword args...` (or no output)."""
@@ -134,6 +144,15 @@ _allow_engine_ids: ContextVar[bool] = ContextVar("pygeomatic_allow_engine_ids", 
 # body-internal references to them resolve, and an explicit id may overwrite
 # an existing node (the engine's saveNode is last-write-wins).
 _macro_replay: ContextVar[bool] = ContextVar("pygeomatic_macro_replay", default=False)
+
+# Set False while the article round-trip gate replays a compiled document
+# (article.py): auto-creating a missing Point/Scalar/Text there would mask the
+# define-before-use violations the gate exists to catch (the reader's engine
+# would silently bind a consumer to a random-valued auto-created node), so
+# unknown ids must error even though live authoring and parse auto-create them.
+_auto_create_enabled: ContextVar[bool] = ContextVar(
+    "pygeomatic_auto_create", default=True
+)
 
 # Set while an article's pygeomatic code runs (article.py). Articles are read
 # back by the engine span-by-span, where reassigning an id is a core idiom

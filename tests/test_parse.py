@@ -58,8 +58,10 @@ def test_property_chain_whitelist():
 
 
 def test_define_before_use():
+    # Point/Scalar/Text ids auto-create (see test_auto_create.py); any other
+    # parameter type still enforces define-before-use.
     with gm.Store():
-        with pytest.raises(DslParseError, match="unknown node id 'ghost'"):
+        with pytest.raises(DslParseError, match="'ghost' does not exist"):
             gm.parse_dsl("\\highlight ghost")
 
 
