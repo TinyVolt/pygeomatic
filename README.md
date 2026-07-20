@@ -1,6 +1,6 @@
 # pygeomatic
 
-Python mirror of the [geomatic](https://www.tinyvolt.com/geomatic) DSL. Intended to be used in [Nova editor](https://www.tinyvolt.com/geomatic). 
+Python mirror of the [geomatic](https://www.tinyvolt.com/geomatic) DSL. Intended to be used in [Nova editor](https://www.tinyvolt.com/nova). 
 
 Every public function maps 1:1 to a geomatic command; calling it computes numeric values (numpy) where
 possible **and** records the call onto a tape, from which `emit()` produces
