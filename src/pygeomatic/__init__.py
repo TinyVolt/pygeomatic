@@ -105,6 +105,16 @@ from .system_nodes import (  # noqa: F401
     SystemNode,
     register_system_nodes,
 )
+from .tex import (  # noqa: F401
+    SCHEMA,
+    AxisExpr,
+    Selector,
+    Tex,
+    TexError,
+    harvest_tex_bindings,
+    register_tex_schema,
+    tex,
+)
 
 
 def __getattr__(name: str) -> GNode:

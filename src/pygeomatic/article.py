@@ -38,10 +38,27 @@ from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Optional, Sequence, Union
 
+import json
+
 from .coercions import allow_coercions
 from .emit import emit, render_command
 from .parse import DslParseError, parse_dsl
 from .store import Store, _article_replay, _auto_create_enabled, current_store
+from .tex import harvest_tex_bindings
+
+# texatlas bindings (gm.tex) are declarative page config, not DSL: the compiler
+# harvests them from the session and snapshots them into the compiled article as
+# an HTML comment (invisible to any markdown renderer, easily extracted by the
+# reader). Not a span, not a fence — the round-trip gate never sees it.
+_TEX_MANIFEST_OPEN = "<!-- texatlas:v1"
+_TEX_MANIFEST_CLOSE = "-->"
+
+
+def _append_tex_manifest(compiled: str, manifest: dict) -> str:
+    body = json.dumps(manifest, separators=(",", ":"), sort_keys=False)
+    block = f"{_TEX_MANIFEST_OPEN}\n{body}\n{_TEX_MANIFEST_CLOSE}\n"
+    sep = "" if compiled.endswith("\n") or not compiled else "\n"
+    return f"{compiled}{sep}\n{block}"
 
 
 class ArticleError(ValueError):
@@ -557,6 +574,14 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
             f"round-trip drift: {len(commands)} command(s) in the document, "
             f"{len(replayed)} after replay",
         )
+
+    # -- texatlas snapshot ---------------------------------------------------
+    # Harvest the session's gm.tex bindings (recorded off-tape) and embed them,
+    # after the round-trip gate so the DSL replay is never disturbed. Articles
+    # with no bindings are byte-for-byte unchanged.
+    manifest = harvest_tex_bindings(store)
+    if manifest:
+        compiled = _append_tex_manifest(compiled, manifest)
     return compiled
 
 
