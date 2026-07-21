@@ -133,19 +133,30 @@ The `k` offset picks the `k`-th diagonal (`diag(k)`) or the triangle from the
 
 ## 5. Targeting one matrix in a multi-matrix formula: `matrix=`
 
-A formula can contain more than one matrix (`A = (\ldots),\ B = (\ldots)`). Pass
-`matrix=N` on any `.highlight(...)` to paint the **N-th matrix** — a 0-based
-occurrence index in document (source) order. Each highlight carries its own
-index, so different highlights on one formula can target different matrices;
-cells never bleed across matrices browser-side.
+A single formula can contain more than one matrix. Take this one in an article,
+addressed by the id `matmul`:
 
-```python
-M = gm.tex("AB")
-M.highlight(rows == r, color="pink")              # matrix 0 (the first — default)
-M.highlight(cols == c, color="blue", matrix=1)    # the second matrix
-M[3:, :].highlight(matrix=1)                        # works on regions too
+```markdown
+$$[#matmul]
+A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}
+\quad
+B = \begin{pmatrix} e & f \\ g & h \end{pmatrix}
+$$
 ```
 
+`gm.tex("matmul")` is a handle to that **whole formula**, not to one matrix — so
+a highlight has to say *which* matrix it paints. That's `matrix=N`: the **N-th
+matrix in source order**, 0-based. Here `A` is matrix 0 and `B` is matrix 1:
+
+```python
+f = gm.tex("matmul")                              # the formula above (A and B)
+f.highlight(rows == r, color="pink")              # row r of A — matrix 0, the default
+f.highlight(cols == c, color="blue", matrix=1)    # column c of B — the second matrix
+f[3:, :].highlight(matrix=1)                       # regions take matrix= too
+```
+
+Each highlight carries its own index, so the two calls above paint different
+matrices from the one handle; cells never bleed across matrices browser-side.
 `matrix` defaults to `0` and is **omitted from the wire JSON when 0**, so every
 existing single-matrix binding stays byte-identical (CONTRACT v1 parity).
 
