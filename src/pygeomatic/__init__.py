@@ -111,8 +111,11 @@ from .tex import (  # noqa: F401
     Selector,
     Tex,
     TexError,
+    cols,
+    dim,
     harvest_tex_bindings,
     register_tex_schema,
+    rows,
     tex,
 )
 
