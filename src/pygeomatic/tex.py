@@ -122,6 +122,26 @@ def _env_ref(value: Union[GNode, str, int, float], *, what: str) -> dict:
     return {"node": _node_id(value, what=what)}
 
 
+def _matrix_index(matrix: int) -> int:
+    """Validate an author-supplied matrix occurrence index (a non-negative int).
+
+    This is which matrix in a multi-matrix formula a highlight paints — see
+    `Tex.highlight` for the source-order counting rule. Python never counts the
+    matrices itself (it does not parse LaTeX); the author supplies the integer."""
+    if isinstance(matrix, bool) or not isinstance(matrix, int) or matrix < 0:
+        raise TexError(f"matrix index must be a non-negative int, got {matrix!r}")
+    return matrix
+
+
+def _highlight_entry(selector_json: dict, color: str, matrix: int) -> dict:
+    """A `HighlightBinding` wire entry. `matrix` (occurrence index) is omitted
+    when 0 so single-matrix formulas stay byte-identical to the v1 output."""
+    entry: dict = {"selector": selector_json, "color": _resolve_color(color)}
+    if _matrix_index(matrix):
+        entry["matrix"] = matrix
+    return entry
+
+
 def _resolve_color(color: str) -> str:
     """Resolve a palette name to its hex before it crosses the wire; pass any
     other CSS color string (`#f472b6`, `pink`, `rgb(...)`) through unchanged."""
@@ -298,10 +318,11 @@ class _Region(Selector):
         super().__init__(json)
         self._tex_id = tex_id
 
-    def highlight(self, *, color: str = "COLOR-YELLOW") -> None:
-        """Paint this region on its formula, in `color` (see `Tex.highlight`)."""
+    def highlight(self, *, color: str = "COLOR-YELLOW", matrix: int = 0) -> None:
+        """Paint this region on its formula, in `color`, on the `matrix`-th
+        matrix of the formula (see `Tex.highlight` for both)."""
         _bindings(self._tex_id)["highlights"].append(
-            {"selector": self._json_, "color": _resolve_color(color)}
+            _highlight_entry(self._json_, color, matrix)
         )
 
     def and_(self, other: "Selector") -> "_Region":
@@ -434,11 +455,32 @@ class Tex:
         """The cell's column index, as an axis expression."""
         return _NamedAxis("col")
 
-    def highlight(self, selector: Selector, *, color: str = "COLOR-YELLOW") -> None:
+    def highlight(
+        self, selector: Selector, *, color: str = "COLOR-YELLOW", matrix: int = 0
+    ) -> None:
         """Paint the cells the selector weights, in `color` (a palette name is
-        resolved to hex here; any other CSS color passes through)."""
+        resolved to hex here; any other CSS color passes through).
+
+        `matrix` is the 0-based occurrence index of which matrix in the formula
+        to paint, in document (source) order — for a formula with more than one
+        matrix. It defaults to 0 (the first / only matrix) and is omitted from
+        the wire JSON when 0, so single-matrix formulas are unchanged. Each
+        highlight carries its own index, so different highlights on one formula
+        may target different matrices.
+
+        Python does NOT parse the LaTeX to count matrices — you supply the
+        integer — so you must count the SAME way the browser does: count only
+        genuine matrices, in source order, SKIPPING equation-layout blocks.
+        Skip: `aligned`, `align`, `split`, `alignat`, `gathered`, `gather`, `CD`.
+        Count: `matrix` / `pmatrix` / `bmatrix` / `Bmatrix` / `vmatrix` /
+        `Vmatrix` (and `*`-variants), plain `array`, `cases` / `dcases` /
+        `rcases`, `smallmatrix`, `subarray`. So in
+        `\\begin{aligned} ... \\begin{pmatrix}...\\end{pmatrix} ... \\end{aligned}`
+        the pmatrix is matrix index 0 (the aligned wrapper is not counted). An
+        out-of-range index is non-fatal browser-side (that highlight paints
+        nothing; the rest still render), so no error is raised here."""
         _bindings(self.id)["highlights"].append(
-            {"selector": _as_selector(selector), "color": _resolve_color(color)}
+            _highlight_entry(_as_selector(selector), color, matrix)
         )
 
     def __getitem__(self, key) -> _Region:

@@ -431,6 +431,90 @@ def test_diag_triu_tril():
 
 
 # ---------------------------------------------------------------------------
+# Multi-matrix highlights  —  the `matrix` occurrence index  (CONTRACT v1.1)
+# ---------------------------------------------------------------------------
+
+
+def test_matrix_default_is_omitted_for_v1_parity():
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        M = gm.tex("M")
+        M.highlight(M.rows().eq(r), color="#f472b6")  # default matrix=0
+    (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    # Byte-identical to the v1 worked example: no `matrix` key at all.
+    assert h == {
+        "selector": {"op": "eq", "axis": {"axis": "row"}, "value": {"node": "r"}},
+        "color": "#f472b6",
+    }
+    assert "matrix" not in h
+
+
+def test_matrix_zero_explicit_is_still_omitted():
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        M = gm.tex("M")
+        M.highlight(M.rows().eq(r), matrix=0)
+    (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    assert "matrix" not in h
+
+
+def test_explicit_matrix_index_serialized():
+    with gm.Store() as s:
+        c = gm.scalar(0, out="c")
+        M = gm.tex("M")
+        M.highlight(M.cols().eq(c), color="#6aa8ff", matrix=1)
+    (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    assert h["matrix"] == 1
+
+
+def test_two_matrices_in_one_formula():
+    # The v1.1 reference JSON: row r of matrix 0 pink, column c of matrix 1 blue.
+    from pygeomatic import cols, rows
+
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        c = gm.scalar(0, out="c")
+        M = gm.tex("M")
+        M.highlight(rows == r, color="#f472b6")  # matrix 0 (omitted)
+        M.highlight(cols == c, color="#6aa8ff", matrix=1)
+    assert gm.harvest_tex_bindings(s)["M"]["highlights"] == [
+        {
+            "selector": {"op": "eq", "axis": {"axis": "row"}, "value": {"node": "r"}},
+            "color": "#f472b6",
+        },
+        {
+            "selector": {"op": "eq", "axis": {"axis": "col"}, "value": {"node": "c"}},
+            "color": "#6aa8ff",
+            "matrix": 1,
+        },
+    ]
+
+
+def test_region_highlight_takes_matrix_index():
+    with gm.Store() as s:
+        M = gm.tex("M")
+        M[3:, 4:].highlight(color="pink", matrix=2)
+        M.triu().highlight()  # default 0, omitted
+    hs = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    assert hs[0]["matrix"] == 2
+    assert "matrix" not in hs[1]
+
+
+def test_negative_matrix_index_rejected():
+    with gm.Store():
+        M = gm.tex("M")
+        with pytest.raises(TexError, match="matrix index must be a non-negative int"):
+            M.highlight(M.rows().eq(0), matrix=-1)
+
+
+def test_bool_matrix_index_rejected():
+    with gm.Store():
+        M = gm.tex("M")
+        with pytest.raises(TexError, match="matrix index must be a non-negative int"):
+            M.highlight(M.rows().eq(0), matrix=True)
+
+
+# ---------------------------------------------------------------------------
 # Colors
 # ---------------------------------------------------------------------------
 

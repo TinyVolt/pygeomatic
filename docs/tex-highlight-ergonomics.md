@@ -131,6 +131,39 @@ The `k` offset picks the `k`-th diagonal (`diag(k)`) or the triangle from the
 
 ---
 
+## 5. Targeting one matrix in a multi-matrix formula: `matrix=`
+
+A formula can contain more than one matrix (`A = (\ldots),\ B = (\ldots)`). Pass
+`matrix=N` on any `.highlight(...)` to paint the **N-th matrix** — a 0-based
+occurrence index in document (source) order. Each highlight carries its own
+index, so different highlights on one formula can target different matrices;
+cells never bleed across matrices browser-side.
+
+```python
+M = gm.tex("AB")
+M.highlight(rows == r, color="pink")              # matrix 0 (the first — default)
+M.highlight(cols == c, color="blue", matrix=1)    # the second matrix
+M[3:, :].highlight(matrix=1)                        # works on regions too
+```
+
+`matrix` defaults to `0` and is **omitted from the wire JSON when 0**, so every
+existing single-matrix binding stays byte-identical (CONTRACT v1 parity).
+
+**You count the matrices — Python does not parse the LaTeX.** So count the
+**same way the browser does**: only genuine matrices, in source order,
+**skipping equation-layout blocks**.
+
+| Skip (not counted) | Count as a matrix |
+| --- | --- |
+| `aligned`, `align`, `split`, `alignat`, `gathered`, `gather`, `CD` | `matrix` / `pmatrix` / `bmatrix` / `Bmatrix` / `vmatrix` / `Vmatrix` (and `*`-variants), plain `array`, `cases` / `dcases` / `rcases`, `smallmatrix`, `subarray` |
+
+So in `\begin{aligned} … \begin{pmatrix}…\end{pmatrix} … \end{aligned}` the
+`pmatrix` is matrix index **0** — the `aligned` wrapper is not counted. An
+out-of-range index is a non-fatal browser-side warning (that highlight paints
+nothing; the rest still render), so no error is raised in Python.
+
+---
+
 ## Choosing a form
 
 | Region shape | Use |
@@ -141,6 +174,7 @@ The `k` offset picks the `k`-th diagonal (`diag(k)`) or the triangle from the
 | Any cross-axis relation / band | operators: `cols - rows > k` |
 | Combine regions | `&` / `\|`, or `.and_()` / `.or_()` |
 | Fade / gate behind a click | `.scale(node)` on any region |
+| Pick one of several matrices | `matrix=N` on `.highlight(...)` |
 
 All of it is Python-side sugar that lowers to the selector JSON in CONTRACT.md
 (`eq`/`ge`/`le`/`gt`/`lt`, `and`/`or`/`scale`) — keep the runtime and
