@@ -1,6 +1,7 @@
 """gm.tex — texatlas bindings recorder (addressable, reactively styled KaTeX).
 
-A `$$[#id]$$` formula in a markdown article is made addressable and reactive
+A `$$…$$` formula in a markdown article (given an id by a `%id:` line as its
+first line) is made addressable and reactive
 NOT by any DSL command but by declarative *bindings* recorded here: a schema
 slot can show a store node's live value (`energy.int.upper.bind(a)`), and matrix
 cells can be highlighted by selectors built from store nodes
@@ -423,12 +424,12 @@ class _FamilyList:
 
 
 # ---------------------------------------------------------------------------
-# Tex — the callable matching a $$[#id]$$ formula
+# Tex — the callable matching a $$…$$ formula (by its `%id:` id)
 # ---------------------------------------------------------------------------
 
 
 class Tex:
-    """Handle to a `$$[#id]$$` formula. Descend into a slot family to bind a
+    """Handle to a `$$…$$` formula (addressed by its `%id:` id). Descend into a slot family to bind a
     value (`t.int.upper.bind(a)`), or highlight matrix cells. Highlights have
     several ergonomic surfaces, all lowering to the same selector JSON (see
     docs/tex-highlight-ergonomics.md):
@@ -556,7 +557,7 @@ class Tex:
 
 
 def tex(tex_id: str) -> Tex:
-    """A handle to the `$$[#id]$$` formula in the current article, for binding
+    """A handle to the `$$…$$` formula (by its `%id:` id) in the current article, for binding
     values and highlights to it. Its bindings record on the active store's
     texatlas channel, harvested (not emitted) into the compiled article."""
     if not isinstance(tex_id, str) or not tex_id:

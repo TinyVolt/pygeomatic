@@ -1,7 +1,7 @@
 # `gm.tex` highlight ergonomics
 
 Four sugar layers over the matrix-highlight selector, so you can paint cells of a
-`$$[#id]$$` matrix without the `M.rows().sub(M.cols()).ge(0)` ceremony. **Every
+`$$…$$` matrix without the `M.rows().sub(M.cols()).ge(0)` ceremony. **Every
 form below lowers to the selector JSON the browser consumes** (`eq` / `ge` / `le`
 / `gt` / `lt`, `AxisBinOp`, `and` / `or` / `scale`) — the sugar is Python-side, no
 new wire shapes beyond what CONTRACT.md defines. It is all recorded on the store's
@@ -134,10 +134,12 @@ The `k` offset picks the `k`-th diagonal (`diag(k)`) or the triangle from the
 ## 5. Targeting one matrix in a multi-matrix formula: `matrix=`
 
 A single formula can contain more than one matrix. Take this one in an article,
-addressed by the id `matmul`:
+addressed by the id `matmul` — the id is a `%id:` line as the first line inside
+the `$$…$$` block (see the texatlas section of the README):
 
 ```markdown
-$$[#matmul]
+$$
+%id:matmul
 A = \begin{pmatrix} a & b \\ c & d \end{pmatrix}
 \quad
 B = \begin{pmatrix} e & f \\ g & h \end{pmatrix}
