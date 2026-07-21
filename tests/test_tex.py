@@ -274,14 +274,14 @@ def test_operator_forms_lower_to_named_methods():
         M.highlight(cols - rows > 0, color="#6aa8ff")
     with gm.Store() as s2:
         M = gm.tex("M")
-        M.highlight(M.cols().sub(M.rows()).ge(0), color="#6aa8ff")
-    # `> 0` is `>= 1` on integer indices — NOT equal to `.ge(0)`.
-    assert gm.harvest_tex_bindings(s1) != gm.harvest_tex_bindings(s2)
+        M.highlight(M.cols().sub(M.rows()).gt(0), color="#6aa8ff")
+    # `> 0` is the first-class `gt` op (CONTRACT.md), not a shifted `ge`.
+    assert gm.harvest_tex_bindings(s1) == gm.harvest_tex_bindings(s2)
     sel = gm.harvest_tex_bindings(s1)["M"]["highlights"][0]["selector"]
-    assert sel["op"] == "ge" and sel["value"] == {"const": 1}
+    assert sel["op"] == "gt" and sel["value"] == {"const": 0}
 
 
-def test_eq_ge_le_operators():
+def test_eq_ge_le_gt_lt_operators():
     from pygeomatic import rows
 
     with gm.Store() as s:
@@ -290,8 +290,32 @@ def test_eq_ge_le_operators():
         M.highlight(rows == r)
         M.highlight(rows >= 2)
         M.highlight(rows <= 5)
+        M.highlight(rows > 2)
+        M.highlight(rows < 5)
     ops = [(h["selector"]["op"], h["selector"]["value"]) for h in gm.harvest_tex_bindings(s)["M"]["highlights"]]
-    assert ops == [("eq", {"node": "r"}), ("ge", {"const": 2}), ("le", {"const": 5})]
+    assert ops == [
+        ("eq", {"node": "r"}),
+        ("ge", {"const": 2}),
+        ("le", {"const": 5}),
+        ("gt", {"const": 2}),
+        ("lt", {"const": 5}),
+    ]
+
+
+def test_strict_operators_accept_node_bounds():
+    from pygeomatic import cols, rows
+
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        c = gm.scalar(0, out="c")
+        M = gm.tex("M")
+        M.highlight((rows > r) & (cols < c))  # node bounds now allowed
+    top = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert top == {
+        "op": "and",
+        "a": {"op": "gt", "axis": {"axis": "row"}, "value": {"node": "r"}},
+        "b": {"op": "lt", "axis": {"axis": "col"}, "value": {"node": "c"}},
+    }
 
 
 def test_reflected_arithmetic():
@@ -302,15 +326,6 @@ def test_reflected_arithmetic():
         M.highlight((1 + rows).eq(3))  # __radd__
     sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
     assert sel["axis"] == {"op": "add", "a": {"const": 1}, "b": {"axis": "row"}}
-
-
-def test_strict_operator_needs_integer_bound():
-    from pygeomatic import rows
-
-    with gm.Store():
-        r = gm.scalar(0, out="r")
-        with pytest.raises(TexError, match="strict '>' needs an integer bound"):
-            rows > r
 
 
 # ---------------------------------------------------------------------------
@@ -333,9 +348,18 @@ def test_slice_box_is_and_of_bounds():
 def test_slice_exclusive_stop():
     with gm.Store() as s:
         M = gm.tex("M")
-        M[:3, :].highlight()  # rows 0..2  ->  row <= 2
+        M[:3, :].highlight()  # rows 0..2  ->  row < 3
     sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
-    assert sel == {"op": "le", "axis": {"axis": "row"}, "value": {"const": 2}}
+    assert sel == {"op": "lt", "axis": {"axis": "row"}, "value": {"const": 3}}
+
+
+def test_slice_node_stop_is_reactive():
+    with gm.Store() as s:
+        n = gm.scalar(0, out="n")
+        M = gm.tex("M")
+        M[:n, :].highlight()  # exclusive node stop -> row < n, stays reactive
+    sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert sel == {"op": "lt", "axis": {"axis": "row"}, "value": {"node": "n"}}
 
 
 def test_single_index_is_equality_and_node_is_reactive():
@@ -386,14 +410,6 @@ def test_slice_step_rejected():
         M = gm.tex("M")
         with pytest.raises(TexError, match="step is not supported"):
             M[::2, :]
-
-
-def test_slice_node_stop_rejected():
-    with gm.Store():
-        r = gm.scalar(0, out="r")
-        M = gm.tex("M")
-        with pytest.raises(TexError, match="exclusive slice stop must be an integer"):
-            M[:r, :]
 
 
 # ---------------------------------------------------------------------------

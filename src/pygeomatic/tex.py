@@ -163,10 +163,15 @@ class AxisExpr:
     def le(self, value: Union[GNode, str, int, float]) -> "Selector":
         return Selector({"op": "le", "axis": self._json(), "value": _env_ref(value, what="selector value")})
 
-    # Rich comparison sugar: `axis == v` / `>= v` / `<= v` are `.eq/.ge/.le`.
-    # Strict `>`/`<` have no wire op — on integer grid indices `> v` is `>= v+1`,
-    # so they lower to `ge`/`le` with an integer shift and REQUIRE an int bound
-    # (a node bound must use `>=`/`<=`, whose exclusive/inclusive edge is explicit).
+    def gt(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return Selector({"op": "gt", "axis": self._json(), "value": _env_ref(value, what="selector value")})
+
+    def lt(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return Selector({"op": "lt", "axis": self._json(), "value": _env_ref(value, what="selector value")})
+
+    # Rich comparison sugar: `axis == v` / `>= v` / `<= v` / `> v` / `< v` are the
+    # `.eq/.ge/.le/.gt/.lt` wire ops. Strict `>`/`<` are first-class in the runtime
+    # (CONTRACT.md), so a node bound is fine — no integer shift here.
     def __eq__(self, value: object) -> "Selector":  # type: ignore[override]
         return self.eq(value)  # type: ignore[arg-type]
 
@@ -176,11 +181,11 @@ class AxisExpr:
     def __le__(self, value: Union[GNode, str, int, float]) -> "Selector":
         return self.le(value)
 
-    def __gt__(self, value: int) -> "Selector":
-        return self.ge(_strict_bound(value, +1, ">"))
+    def __gt__(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return self.gt(value)
 
-    def __lt__(self, value: int) -> "Selector":
-        return self.le(_strict_bound(value, -1, "<"))
+    def __lt__(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return self.lt(value)
 
     def __radd__(self, other: Union[int, float]) -> "AxisExpr":  # 1 + rows
         return _as_axis(other).add(self)
@@ -218,18 +223,6 @@ class _AxisBinOp(AxisExpr):
 
     def _json(self) -> dict:
         return {"op": self._op, "a": self._a._json(), "b": self._b._json()}
-
-
-def _strict_bound(value: int, delta: int, op: str) -> int:
-    """Lower a strict `axis > v` / `< v` to a non-strict integer edge (`>= v+1`).
-    Grid indices are integers, so this is exact — but only for an int bound; a
-    node bound has no representable `±1`, so the author must use `>=`/`<=`."""
-    if isinstance(value, bool) or not isinstance(value, int):
-        raise TexError(
-            f"strict '{op}' needs an integer bound (grid indices are integers); "
-            "for a node bound use '>=' or '<=', whose edge is explicit"
-        )
-    return value + delta
 
 
 def _as_axis(value: Union[AxisExpr, int, float]) -> AxisExpr:
@@ -478,12 +471,7 @@ class Tex:
                 if k.start is not None:
                     parts.append(ax.ge(k.start))  # inclusive start (node or int)
                 if k.stop is not None:
-                    if isinstance(k.stop, bool) or not isinstance(k.stop, int):
-                        raise TexError(
-                            "exclusive slice stop must be an integer; for a node "
-                            "upper bound use an explicit selector (dim(i) <= node)"
-                        )
-                    parts.append(ax.le(k.stop - 1))  # exclusive stop -> <= stop-1
+                    parts.append(ax.lt(k.stop))  # exclusive stop -> < stop (node or int)
             elif isinstance(k, GNode) or (isinstance(k, int) and not isinstance(k, bool)) or isinstance(k, str):
                 parts.append(ax.eq(k))  # exact index
             else:

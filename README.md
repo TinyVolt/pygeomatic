@@ -182,8 +182,8 @@ $$
 ```pygeomatic
 r = gm.scalar(0, out="r")
 M = gm.tex("M")
-M.highlight(M.rows().eq(r), color="pink")                # row r
-M.highlight(M.cols().sub(M.rows()).ge(0), color="blue")  # upper triangle
+M.highlight(M.rows() == r, color="pink")   # row r
+M.triu().highlight(color="blue")           # upper triangle
 ```
 
 Move it: {row 1}(r = gm.scalar(1)) · {row 2}(r = gm.scalar(2))
@@ -195,12 +195,17 @@ Move it: {row 1}(r = gm.scalar(1)) · {row 2}(r = gm.scalar(2))
   is `".2f"` / `"d"` (omit → trim to ≤4 dp); `show="symbol"` links without
   substituting the glyph. Repeated command? `t.ints[1].upper` picks an
   occurrence (discouraged — an edit silently retargets it).
-- **Highlights**: `M.rows()` / `M.cols()` are axis expressions (`.add`/`.sub`,
-  `+`/`-`); `.eq` / `.ge` / `.le(node | number)` make a selector; combine with
-  `.and_` / `.or_` (`&` / `|`) and `.scale(node)` to fade a whole selection —
-  `scale` by a node + a `\scalar u 1` CommandLink is how you gate a highlight
+- **Highlights**: build a selector over a cell's grid position and paint it.
+  Axes are `M.rows()` / `M.cols()` (or module-level `rows` / `cols` / `dim(i)`),
+  with arithmetic (`cols - rows`, `+`/`-`). Compare with `==` / `>=` / `<=` /
+  `>` / `<` (or `.eq/.ge/.le/.gt/.lt`) against a node or number; select
+  axis-aligned boxes with numpy-style slicing (`M[3:, 4:]`, node bounds stay
+  reactive); or use the named regions `M.diag()` / `M.triu()` / `M.tril()`.
+  Combine with `&` / `|` (`.and_` / `.or_`) and `.scale(node)` to fade a whole
+  selection — `scale` by a node + a `\scalar u 1` CommandLink gates a highlight
   behind a click. Palette names (`"pink"`, `"BLUE"`) resolve to hex; raw
-  `"#f472b6"` / CSS names pass through.
+  `"#f472b6"` / CSS names pass through. Full reference:
+  [docs/tex-highlight-ergonomics.md](docs/tex-highlight-ergonomics.md).
 
 Two rules that will bite otherwise:
 
@@ -223,7 +228,7 @@ a node that starts at `0`:
 
 ```python
 u = gm.scalar(0, out="u")               # 0 → highlight invisible
-M.highlight(M.rows().eq(r).scale(u))    # weight = row-weight × u
+M.highlight((M.rows() == r).scale(u))   # weight = row-weight × u
 ```
 ```markdown
 {reveal}(u = gm.scalar(1))              # click sets u=1 → highlight appears

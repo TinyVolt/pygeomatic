@@ -2,10 +2,10 @@
 
 Four sugar layers over the matrix-highlight selector, so you can paint cells of a
 `$$[#id]$$` matrix without the `M.rows().sub(M.cols()).ge(0)` ceremony. **Every
-form below lowers to the exact same selector JSON** the browser already consumes
-(`eq` / `ge` / `le`, `AxisBinOp`, `and` / `or` / `scale`) — nothing here changes
-the wire contract or the runtime. It is all recorded on the store's texatlas
-channel and harvested by `harvest_tex_bindings`, never emitted as DSL.
+form below lowers to the selector JSON the browser consumes** (`eq` / `ge` / `le`
+/ `gt` / `lt`, `AxisBinOp`, `and` / `or` / `scale`) — the sugar is Python-side, no
+new wire shapes beyond what CONTRACT.md defines. It is all recorded on the store's
+texatlas channel and harvested by `harvest_tex_bindings`, never emitted as DSL.
 
 Reminder on the model: a highlight is a predicate over a cell's **grid position**
 (row/col index), never its rendered content. Reactivity comes from the store
@@ -56,24 +56,23 @@ raises. Higher ranks await browser-schema support (the wire keeps its
 | `rows == r` | `rows.eq(r)` | `{"op":"eq", …}` |
 | `rows >= 2` | `rows.ge(2)` | `{"op":"ge", …}` |
 | `rows <= 5` | `rows.le(5)` | `{"op":"le", …}` |
-| `rows > 2` | `rows.ge(3)` | `{"op":"ge", value:3}` |
-| `rows < 5` | `rows.le(4)` | `{"op":"le", value:4}` |
+| `rows > 2` | `rows.gt(2)` | `{"op":"gt", value:2}` |
+| `rows < 5` | `rows.lt(5)` | `{"op":"lt", value:5}` |
 | `cols - rows` | `cols.sub(rows)` | `AxisBinOp("sub", …)` |
 | `1 + rows` | `rows.__radd__` | `AxisBinOp("add", …)` |
 
 So the upper-triangle selector reads naturally:
 
 ```python
-M.highlight(cols - rows > 0, color="blue")   # col - row >= 1
+M.highlight(cols - rows > 0, color="blue")   # strictly above the diagonal
 ```
 
 ### The two things to know
 
-- **Strict `>` / `<` need an *integer* bound.** There is no `gt`/`lt` wire op;
-  on integer grid indices `> v` is exactly `>= v+1`, so `__gt__`/`__lt__` shift
-  the bound by one. That shift isn't representable for a **node** bound, so
-  `rows > some_node` raises — use `rows >= some_node` (its inclusive edge is
-  explicit). `==`, `>=`, `<=` accept a node or an int.
+- **All five comparisons accept a node or an int bound.** `eq`/`ge`/`le`/`gt`/`lt`
+  are all first-class wire ops (CONTRACT.md), and the runtime owns the strict
+  semantics — so `rows > some_node` is fine and stays reactive; there is no
+  integer-shift and no special-casing.
 - **`==` returns a `Selector`, not a bool.** An `AxisExpr` is an expression
   builder, so it's intentionally non-hashable and never a dict key or set
   member. Don't compare two axes for value equality.
@@ -92,25 +91,23 @@ constrains one axis (0 = row, 1 = col, …); the result is a paintable region:
 
 ```python
 M[3:, 4:].highlight(color="pink")   # rows >= 3 AND cols >= 4
-M[:3, :].highlight()                # rows 0..2  (exclusive stop -> row <= 2)
+M[:3, :].highlight()                # rows 0..2  (exclusive stop -> row < 3)
 M[:, c].highlight()                 # exact column c
 M[r, ...].highlight()               # exact row r; trailing ... = rest unconstrained
 ```
 
 Semantics:
 
-- **Slice** — `start` inclusive → `>=`, `stop` exclusive → `<= stop-1`.
+- **Slice** — `start` inclusive → `>=`, `stop` exclusive → `<` (`.lt`).
 - **Bare int / node / node-id** — exact index → `==`.
-- **Node as `start` or as an index stays reactive** — `M[r:, :]` moves as `r`
-  changes. (A node can only be a slice *start* or an exact index, never a slice
-  *stop* — an exclusive upper bound has no representable node edge; use an
-  explicit `dim(i) <= node` selector.)
+- **A node as `start`, `stop`, or an index stays reactive** — `M[r:, :]` and
+  `M[:n, :]` both move as their node changes.
 - **Omitted / `:` axes are unconstrained.** A trailing `...` documents that and
   is otherwise a no-op.
 - Regions compose and **stay paintable**: `(M[3:, :] | M[:, 4:]).highlight()`.
 
 Rejected (each raises `TexError`): a whole-matrix slice `M[:, :]` (nothing to
-distinguish), a step `M[::2, :]`, and a node slice-stop `M[:r, :]`.
+distinguish) and a step `M[::2, :]`.
 
 Boxes are the common case. What a box **cannot** express is a relation *between*
 axes (diagonals, triangles) — reach for the operators (#2) or the helpers (#6).
@@ -145,5 +142,6 @@ The `k` offset picks the `k`-th diagonal (`diag(k)`) or the triangle from the
 | Combine regions | `&` / `\|`, or `.and_()` / `.or_()` |
 | Fade / gate behind a click | `.scale(node)` on any region |
 
-All of it is Python-side only and lowers to today's selector JSON — the browser
-runtime and the frozen wire contract are unchanged.
+All of it is Python-side sugar that lowers to the selector JSON in CONTRACT.md
+(`eq`/`ge`/`le`/`gt`/`lt`, `and`/`or`/`scale`) — keep the runtime and
+`pygeomatic-ref` aligned so the `gt`/`lt` ops are understood.
