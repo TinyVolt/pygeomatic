@@ -1,6 +1,6 @@
 [project]
 name = "pygeomatic"
-version = "0.2"
+version = "0.2.1"
 description = "Python mirror of the geomatic DSL function library; records calls for deterministic DSL emission"
 readme = "README.md"
 license = "MIT"
