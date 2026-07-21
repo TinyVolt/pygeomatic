@@ -139,6 +139,107 @@ uv run python scripts/compile_articles.py articles/ dist/            # a tree
 (equivalently `gm.compile_article(md)` in-process or `gm.run_article(md)` in a
 subprocess; both take `extensions=` / `macros=` / `allow_coercions=`.)
 
+### Live formulas (texatlas)
+
+Make a KaTeX formula *addressable and reactive* — a slot showing a store node's
+live value, matrix cells highlighted by a store node — with `gm.tex`. It is
+**not** DSL: no `\tex-*` command exists and `emit()` never sees it. Bindings are
+harvested straight from the session into a trailing `<!-- texatlas:v1 … -->`
+comment on the compiled article, which the Nova reader applies at load. Reactivity
+flows through the bound *node*: whatever drives it (a `\scalar` CommandLink, an
+`\animate`) reflows the formula with no re-render.
+
+Give the formula an id with a `%id:` line as the first line inside the `$$…$$`
+block, then bind nodes to that id in a fence. (The id syntax is owned entirely
+by the Nova/web reader — pygeomatic never parses the LaTeX; it only needs to
+know which id string a `gm.tex(...)` call refers to.)
+
+````markdown
+$$
+%id:energy
+\int_{a}^{b} x^2 \, dx
+$$
+
+```pygeomatic
+b = gm.scalar(3, out="b")
+energy = gm.tex("energy")         # matches %id:energy
+energy.int.upper.bind(b)          # show b's value in the upper limit
+```
+
+Change it: {b = 5}(b = gm.scalar(5))
+````
+
+Matrix cells are highlighted by **selectors** built from store nodes — the
+selector returns a weight in `[0,1]`, so a fractional (`\animate`d) node
+crossfades between adjacent rows:
+
+````markdown
+$$
+%id:M
+\begin{pmatrix} a & b & c \\ d & e & f \\ g & h & i \end{pmatrix}
+$$
+
+```pygeomatic
+r = gm.scalar(0, out="r")
+M = gm.tex("M")
+M.highlight(M.rows() == r, color="pink")   # row r
+M.triu().highlight(color="blue")           # upper triangle
+```
+
+Move it: {row 1}(r = gm.scalar(1)) · {row 2}(r = gm.scalar(2))
+````
+
+- **Value bind**: `t.<family>.<slot>.bind(node, show=, fmt=)`. Families/slots are
+  `int`/`sum`/`prod` → `lower`/`upper`/`body`, `frac` → `num`/`denom`,
+  `sqrt` → `body` (extend with `gm.register_tex_schema(family, slots)`). `fmt`
+  is `".2f"` / `"d"` (omit → trim to ≤4 dp); `show="symbol"` links without
+  substituting the glyph. Repeated command? `t.ints[1].upper` picks an
+  occurrence (discouraged — an edit silently retargets it).
+- **Highlights**: build a selector over a cell's grid position and paint it.
+  Axes are `M.rows()` / `M.cols()` (or module-level `rows` / `cols` / `dim(i)`),
+  with arithmetic (`cols - rows`, `+`/`-`). Compare with `==` / `>=` / `<=` /
+  `>` / `<` (or `.eq/.ge/.le/.gt/.lt`) against a node or number; select
+  axis-aligned boxes with numpy-style slicing (`M[3:, 4:]`, node bounds stay
+  reactive); or use the named regions `M.diag()` / `M.triu()` / `M.tril()`.
+  Combine with `&` / `|` (`.and_` / `.or_`) and `.scale(node)` to fade a whole
+  selection — `scale` by a node + a `\scalar u 1` CommandLink gates a highlight
+  behind a click. Palette names (`"pink"`, `"BLUE"`) resolve to hex; raw
+  `"#f472b6"` / CSS names pass through. Full reference:
+  [docs/tex-highlight-ergonomics.md](docs/tex-highlight-ergonomics.md).
+
+Two rules that will bite otherwise:
+
+- **Bind replaces content, it never creates structure** — write placeholder
+  symbols in every slot you bind (`\int_{a}^{b}`, not a bare `\int`). An empty
+  slot fails validation.
+- **The bound node must already exist** when you call `.bind()` / `.eq()` — define
+  it (`gm.scalar(…, out="b")`) above the binding so it is part of the runtime env.
+
+**Repeated commands (`ints[i]`).** When one formula uses the same command twice
+— e.g. `$$ \int_a^b f + \int_c^d g $$` — `t.int` is ambiguous. `t.ints` is the
+list of all of them: `t.ints[0]` is the first `\int`, `t.ints[1]` the second.
+The index is positional, so editing the formula (reordering or inserting an
+`\int`) silently retargets it — prefer splitting into two formulas with distinct
+ids, each with a single `\int`.
+
+**Gating a highlight behind a click (`.scale`).** A bound highlight is on as
+soon as it's bound. To reveal it only after a reader clicks, scale its weight by
+a node that starts at `0`:
+
+```python
+u = gm.scalar(0, out="u")               # 0 → highlight invisible
+M.highlight((M.rows() == r).scale(u))   # weight = row-weight × u
+```
+```markdown
+{reveal}(u = gm.scalar(1))              # click sets u=1 → highlight appears
+```
+
+`u=0` hides it, `u=1` shows it fully, `u=0.5` at half — the click is just a
+normal CommandLink writing `u`.
+
+`gm.harvest_tex_bindings(store)` returns the raw `{texId: {values, highlights}}`
+manifest if you need it directly.
+
 ### Publishing from a content repo (GitHub Action)
 
 A content repo publishes compiled articles with one workflow file; a compile

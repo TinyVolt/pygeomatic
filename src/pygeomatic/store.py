@@ -247,7 +247,8 @@ class Store:
         # texatlas bindings (gm.tex): declarative formula↔node links recorded on
         # a channel SEPARATE from the command tape — they never emit DSL and are
         # harvested straight from the session (tex.harvest_tex_bindings). Keyed
-        # by `$$[#id]` formula id → {"values": [...], "highlights": [...]}.
+        # by formula id (the `%id:` line inside a `$$…$$` block) →
+        # {"values": [...], "highlights": [...]}.
         self.tex_bindings: dict[str, dict] = {}
         self._token = None
         # Every canvas starts with the engine's default nodes (`p0`, `T`/`F`,

@@ -224,6 +224,297 @@ def test_selector_value_must_not_be_bool():
 
 
 # ---------------------------------------------------------------------------
+# Free axis handles  —  rows / cols / dim(i)   (ergonomics #1)
+# ---------------------------------------------------------------------------
+
+
+def test_free_axes_match_method_axes():
+    from pygeomatic import cols, rows
+
+    with gm.Store() as s1:
+        r = gm.scalar(0, out="r")
+        gm.tex("M").highlight(rows == r)
+    with gm.Store() as s2:
+        r = gm.scalar(0, out="r")
+        M = gm.tex("M")
+        M.highlight(M.rows().eq(r))
+    assert gm.harvest_tex_bindings(s1) == gm.harvest_tex_bindings(s2)
+
+
+def test_dim_maps_to_row_col():
+    from pygeomatic import dim
+
+    with gm.Store() as s:
+        M = gm.tex("M")
+        M.highlight(dim(0).eq(1))
+        M.highlight(dim(1).eq(2))
+    axes = [h["selector"]["axis"] for h in gm.harvest_tex_bindings(s)["M"]["highlights"]]
+    assert axes == [{"axis": "row"}, {"axis": "col"}]
+
+
+def test_dim_rank_over_two_rejected():
+    from pygeomatic import dim
+
+    with pytest.raises(TexError, match="rank > 2"):
+        dim(2)
+    with pytest.raises(TexError, match="non-negative int"):
+        dim(-1)
+
+
+# ---------------------------------------------------------------------------
+# Comparison / arithmetic operators  (ergonomics #2)
+# ---------------------------------------------------------------------------
+
+
+def test_operator_forms_lower_to_named_methods():
+    from pygeomatic import cols, rows
+
+    with gm.Store() as s1:
+        M = gm.tex("M")
+        M.highlight(cols - rows > 0, color="#6aa8ff")
+    with gm.Store() as s2:
+        M = gm.tex("M")
+        M.highlight(M.cols().sub(M.rows()).gt(0), color="#6aa8ff")
+    # `> 0` is the first-class `gt` op (CONTRACT.md), not a shifted `ge`.
+    assert gm.harvest_tex_bindings(s1) == gm.harvest_tex_bindings(s2)
+    sel = gm.harvest_tex_bindings(s1)["M"]["highlights"][0]["selector"]
+    assert sel["op"] == "gt" and sel["value"] == {"const": 0}
+
+
+def test_eq_ge_le_gt_lt_operators():
+    from pygeomatic import rows
+
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        M = gm.tex("M")
+        M.highlight(rows == r)
+        M.highlight(rows >= 2)
+        M.highlight(rows <= 5)
+        M.highlight(rows > 2)
+        M.highlight(rows < 5)
+    ops = [(h["selector"]["op"], h["selector"]["value"]) for h in gm.harvest_tex_bindings(s)["M"]["highlights"]]
+    assert ops == [
+        ("eq", {"node": "r"}),
+        ("ge", {"const": 2}),
+        ("le", {"const": 5}),
+        ("gt", {"const": 2}),
+        ("lt", {"const": 5}),
+    ]
+
+
+def test_strict_operators_accept_node_bounds():
+    from pygeomatic import cols, rows
+
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        c = gm.scalar(0, out="c")
+        M = gm.tex("M")
+        M.highlight((rows > r) & (cols < c))  # node bounds now allowed
+    top = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert top == {
+        "op": "and",
+        "a": {"op": "gt", "axis": {"axis": "row"}, "value": {"node": "r"}},
+        "b": {"op": "lt", "axis": {"axis": "col"}, "value": {"node": "c"}},
+    }
+
+
+def test_reflected_arithmetic():
+    from pygeomatic import rows
+
+    with gm.Store() as s:
+        M = gm.tex("M")
+        M.highlight((1 + rows).eq(3))  # __radd__
+    sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert sel["axis"] == {"op": "add", "a": {"const": 1}, "b": {"axis": "row"}}
+
+
+# ---------------------------------------------------------------------------
+# Slice / cell-region syntax  (ergonomics #3)
+# ---------------------------------------------------------------------------
+
+
+def test_slice_box_is_and_of_bounds():
+    with gm.Store() as s:
+        M = gm.tex("M")
+        M[3:, 4:].highlight(color="#10B981")
+    sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert sel == {
+        "op": "and",
+        "a": {"op": "ge", "axis": {"axis": "row"}, "value": {"const": 3}},
+        "b": {"op": "ge", "axis": {"axis": "col"}, "value": {"const": 4}},
+    }
+
+
+def test_slice_exclusive_stop():
+    with gm.Store() as s:
+        M = gm.tex("M")
+        M[:3, :].highlight()  # rows 0..2  ->  row < 3
+    sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert sel == {"op": "lt", "axis": {"axis": "row"}, "value": {"const": 3}}
+
+
+def test_slice_node_stop_is_reactive():
+    with gm.Store() as s:
+        n = gm.scalar(0, out="n")
+        M = gm.tex("M")
+        M[:n, :].highlight()  # exclusive node stop -> row < n, stays reactive
+    sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert sel == {"op": "lt", "axis": {"axis": "row"}, "value": {"node": "n"}}
+
+
+def test_single_index_is_equality_and_node_is_reactive():
+    with gm.Store() as s:
+        c = gm.scalar(0, out="c")
+        M = gm.tex("M")
+        M[:, c].highlight()  # exact column, node -> reactive
+    sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert sel == {"op": "eq", "axis": {"axis": "col"}, "value": {"node": "c"}}
+
+
+def test_slice_node_start_is_reactive():
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        M = gm.tex("M")
+        M[r:, :].highlight()
+    sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert sel == {"op": "ge", "axis": {"axis": "row"}, "value": {"node": "r"}}
+
+
+def test_trailing_ellipsis_is_noop():
+    with gm.Store() as s1:
+        M = gm.tex("M")
+        M[2, ...].highlight()
+    with gm.Store() as s2:
+        M = gm.tex("M")
+        M[2].highlight()
+    assert gm.harvest_tex_bindings(s1) == gm.harvest_tex_bindings(s2)
+
+
+def test_region_union_stays_paintable():
+    with gm.Store() as s:
+        M = gm.tex("M")
+        (M[3:, :] | M[:, 4:]).highlight(color="pink")  # combined region keeps .highlight
+    top = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
+    assert top["op"] == "or"
+
+
+def test_whole_matrix_slice_rejected():
+    with gm.Store():
+        M = gm.tex("M")
+        with pytest.raises(TexError, match="constrain at least one axis"):
+            M[:, :]
+
+
+def test_slice_step_rejected():
+    with gm.Store():
+        M = gm.tex("M")
+        with pytest.raises(TexError, match="step is not supported"):
+            M[::2, :]
+
+
+# ---------------------------------------------------------------------------
+# Named region helpers  (ergonomics #6)
+# ---------------------------------------------------------------------------
+
+
+def test_diag_triu_tril():
+    with gm.Store() as s:
+        M = gm.tex("M")
+        M.diag().highlight()
+        M.triu(1).highlight()
+        M.tril().highlight()
+    hs = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    base = {"op": "sub", "a": {"axis": "col"}, "b": {"axis": "row"}}
+    assert hs[0]["selector"] == {"op": "eq", "axis": base, "value": {"const": 0}}
+    assert hs[1]["selector"] == {"op": "ge", "axis": base, "value": {"const": 1}}
+    assert hs[2]["selector"] == {"op": "le", "axis": base, "value": {"const": 0}}
+
+
+# ---------------------------------------------------------------------------
+# Multi-matrix highlights  —  the `matrix` occurrence index  (CONTRACT v1.1)
+# ---------------------------------------------------------------------------
+
+
+def test_matrix_default_is_omitted_for_v1_parity():
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        M = gm.tex("M")
+        M.highlight(M.rows().eq(r), color="#f472b6")  # default matrix=0
+    (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    # Byte-identical to the v1 worked example: no `matrix` key at all.
+    assert h == {
+        "selector": {"op": "eq", "axis": {"axis": "row"}, "value": {"node": "r"}},
+        "color": "#f472b6",
+    }
+    assert "matrix" not in h
+
+
+def test_matrix_zero_explicit_is_still_omitted():
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        M = gm.tex("M")
+        M.highlight(M.rows().eq(r), matrix=0)
+    (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    assert "matrix" not in h
+
+
+def test_explicit_matrix_index_serialized():
+    with gm.Store() as s:
+        c = gm.scalar(0, out="c")
+        M = gm.tex("M")
+        M.highlight(M.cols().eq(c), color="#6aa8ff", matrix=1)
+    (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    assert h["matrix"] == 1
+
+
+def test_two_matrices_in_one_formula():
+    # The v1.1 reference JSON: row r of matrix 0 pink, column c of matrix 1 blue.
+    from pygeomatic import cols, rows
+
+    with gm.Store() as s:
+        r = gm.scalar(0, out="r")
+        c = gm.scalar(0, out="c")
+        M = gm.tex("M")
+        M.highlight(rows == r, color="#f472b6")  # matrix 0 (omitted)
+        M.highlight(cols == c, color="#6aa8ff", matrix=1)
+    assert gm.harvest_tex_bindings(s)["M"]["highlights"] == [
+        {
+            "selector": {"op": "eq", "axis": {"axis": "row"}, "value": {"node": "r"}},
+            "color": "#f472b6",
+        },
+        {
+            "selector": {"op": "eq", "axis": {"axis": "col"}, "value": {"node": "c"}},
+            "color": "#6aa8ff",
+            "matrix": 1,
+        },
+    ]
+
+
+def test_region_highlight_takes_matrix_index():
+    with gm.Store() as s:
+        M = gm.tex("M")
+        M[3:, 4:].highlight(color="pink", matrix=2)
+        M.triu().highlight()  # default 0, omitted
+    hs = gm.harvest_tex_bindings(s)["M"]["highlights"]
+    assert hs[0]["matrix"] == 2
+    assert "matrix" not in hs[1]
+
+
+def test_negative_matrix_index_rejected():
+    with gm.Store():
+        M = gm.tex("M")
+        with pytest.raises(TexError, match="matrix index must be a non-negative int"):
+            M.highlight(M.rows().eq(0), matrix=-1)
+
+
+def test_bool_matrix_index_rejected():
+    with gm.Store():
+        M = gm.tex("M")
+        with pytest.raises(TexError, match="matrix index must be a non-negative int"):
+            M.highlight(M.rows().eq(0), matrix=True)
+
+
+# ---------------------------------------------------------------------------
 # Colors
 # ---------------------------------------------------------------------------
 

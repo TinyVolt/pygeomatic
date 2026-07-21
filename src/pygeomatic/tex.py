@@ -1,6 +1,7 @@
 """gm.tex — texatlas bindings recorder (addressable, reactively styled KaTeX).
 
-A `$$[#id]$$` formula in a markdown article is made addressable and reactive
+A `$$…$$` formula in a markdown article (given an id by a `%id:` line as its
+first line) is made addressable and reactive
 NOT by any DSL command but by declarative *bindings* recorded here: a schema
 slot can show a store node's live value (`energy.int.upper.bind(a)`), and matrix
 cells can be highlighted by selectors built from store nodes
@@ -122,6 +123,26 @@ def _env_ref(value: Union[GNode, str, int, float], *, what: str) -> dict:
     return {"node": _node_id(value, what=what)}
 
 
+def _matrix_index(matrix: int) -> int:
+    """Validate an author-supplied matrix occurrence index (a non-negative int).
+
+    This is which matrix in a multi-matrix formula a highlight paints — see
+    `Tex.highlight` for the source-order counting rule. Python never counts the
+    matrices itself (it does not parse LaTeX); the author supplies the integer."""
+    if isinstance(matrix, bool) or not isinstance(matrix, int) or matrix < 0:
+        raise TexError(f"matrix index must be a non-negative int, got {matrix!r}")
+    return matrix
+
+
+def _highlight_entry(selector_json: dict, color: str, matrix: int) -> dict:
+    """A `HighlightBinding` wire entry. `matrix` (occurrence index) is omitted
+    when 0 so single-matrix formulas stay byte-identical to the v1 output."""
+    entry: dict = {"selector": selector_json, "color": _resolve_color(color)}
+    if _matrix_index(matrix):
+        entry["matrix"] = matrix
+    return entry
+
+
 def _resolve_color(color: str) -> str:
     """Resolve a palette name to its hex before it crosses the wire; pass any
     other CSS color string (`#f472b6`, `pink`, `rgb(...)`) through unchanged."""
@@ -163,6 +184,40 @@ class AxisExpr:
     def le(self, value: Union[GNode, str, int, float]) -> "Selector":
         return Selector({"op": "le", "axis": self._json(), "value": _env_ref(value, what="selector value")})
 
+    def gt(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return Selector({"op": "gt", "axis": self._json(), "value": _env_ref(value, what="selector value")})
+
+    def lt(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return Selector({"op": "lt", "axis": self._json(), "value": _env_ref(value, what="selector value")})
+
+    # Rich comparison sugar: `axis == v` / `>= v` / `<= v` / `> v` / `< v` are the
+    # `.eq/.ge/.le/.gt/.lt` wire ops. Strict `>`/`<` are first-class in the runtime
+    # (CONTRACT.md), so a node bound is fine — no integer shift here.
+    def __eq__(self, value: object) -> "Selector":  # type: ignore[override]
+        return self.eq(value)  # type: ignore[arg-type]
+
+    def __ge__(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return self.ge(value)
+
+    def __le__(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return self.le(value)
+
+    def __gt__(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return self.gt(value)
+
+    def __lt__(self, value: Union[GNode, str, int, float]) -> "Selector":
+        return self.lt(value)
+
+    def __radd__(self, other: Union[int, float]) -> "AxisExpr":  # 1 + rows
+        return _as_axis(other).add(self)
+
+    def __rsub__(self, other: Union[int, float]) -> "AxisExpr":  # 1 - rows
+        return _as_axis(other).sub(self)
+
+    # `__eq__` makes instances non-hashable by Python's rules; that is correct
+    # here (an axis is an expression builder, never a dict key or set member).
+    __hash__ = None  # type: ignore[assignment]
+
     def _json(self) -> dict:  # pragma: no cover - overridden
         raise NotImplementedError
 
@@ -199,6 +254,31 @@ def _as_axis(value: Union[AxisExpr, int, float]) -> AxisExpr:
     return _AxisConst(value)
 
 
+# Free axis handles — an axis carries no reference to any formula, so these are
+# shared module singletons (immutable: every operator returns a NEW node). Write
+# `rows`/`cols`/`dim(i)` directly instead of `M.rows()`/`M.cols()`.
+_AXIS_NAMES: tuple[str, ...] = ("row", "col")
+
+
+def dim(i: int) -> AxisExpr:
+    """The `i`-th grid axis as an expression (`dim(0)` == `rows`, `dim(1)` == `cols`).
+
+    Matrices are 2-D browser-side, so only dims 0 and 1 resolve today; higher
+    ranks await browser-schema support (keeping the wire's `row`/`col` names)."""
+    if isinstance(i, bool) or not isinstance(i, int) or i < 0:
+        raise TexError(f"axis index must be a non-negative int, got {i!r}")
+    if i >= len(_AXIS_NAMES):
+        raise TexError(
+            f"axis {i} is unsupported: matrices are 2-D browser-side (dims 0 and 1); "
+            "rank > 2 awaits browser-schema support"
+        )
+    return _NamedAxis(_AXIS_NAMES[i])
+
+
+rows: AxisExpr = _NamedAxis("row")
+cols: AxisExpr = _NamedAxis("col")
+
+
 class Selector:
     """A highlight selector: `(cell, env) -> weight`. Combine with `and_`/`or_`
     (min/max) or fade the whole selection with `scale`."""
@@ -226,6 +306,37 @@ def _as_selector(value: "Selector") -> dict:
     if not isinstance(value, Selector):
         raise TexError(f"expected a selector, got {type(value).__name__}")
     return value._json_
+
+
+class _Region(Selector):
+    """A selector that remembers which formula it targets, so it can paint
+    itself directly: `M[3:, 4:].highlight()`, `M.triu().highlight(color=...)`.
+    It IS a `Selector`, so it still composes (`M[3:, :] | M[:, 4:]`) and can be
+    passed to `M.highlight(...)`; the combinators keep the target so the result
+    stays paintable."""
+
+    def __init__(self, tex_id: str, json: dict) -> None:
+        super().__init__(json)
+        self._tex_id = tex_id
+
+    def highlight(self, *, color: str = "COLOR-YELLOW", matrix: int = 0) -> None:
+        """Paint this region on its formula, in `color`, on the `matrix`-th
+        matrix of the formula (see `Tex.highlight` for both)."""
+        _bindings(self._tex_id)["highlights"].append(
+            _highlight_entry(self._json_, color, matrix)
+        )
+
+    def and_(self, other: "Selector") -> "_Region":
+        return _Region(self._tex_id, {"op": "and", "a": self._json_, "b": _as_selector(other)})
+
+    def or_(self, other: "Selector") -> "_Region":
+        return _Region(self._tex_id, {"op": "or", "a": self._json_, "b": _as_selector(other)})
+
+    def scale(self, by: Union[GNode, str, int, float]) -> "_Region":
+        return _Region(self._tex_id, {"op": "scale", "sel": self._json_, "by": _env_ref(by, what="scale factor")})
+
+    __and__ = and_
+    __or__ = or_
 
 
 # ---------------------------------------------------------------------------
@@ -313,14 +424,23 @@ class _FamilyList:
 
 
 # ---------------------------------------------------------------------------
-# Tex — the callable matching a $$[#id]$$ formula
+# Tex — the callable matching a $$…$$ formula (by its `%id:` id)
 # ---------------------------------------------------------------------------
 
 
 class Tex:
-    """Handle to a `$$[#id]$$` formula. Descend into a slot family to bind a
-    value (`t.int.upper.bind(a)`), or use the matrix axis selectors to highlight
-    cells (`t.highlight(t.rows().eq(r))`)."""
+    """Handle to a `$$…$$` formula (addressed by its `%id:` id). Descend into a slot family to bind a
+    value (`t.int.upper.bind(a)`), or highlight matrix cells. Highlights have
+    several ergonomic surfaces, all lowering to the same selector JSON (see
+    docs/tex-highlight-ergonomics.md):
+
+        t.highlight(rows == r, color="pink")     # free axes + operators (#1, #2)
+        t.highlight(cols - rows > 0)             # cross-axis relation
+        t[3:, 4:].highlight(color="green")       # numpy-style box (#3)
+        t.triu().highlight()                     # named region (#6)
+
+    `rows`/`cols`/`dim(i)` are module-level axis handles; `t.rows()`/`t.cols()`
+    remain as aliases."""
 
     def __init__(self, tex_id: str) -> None:
         self.id = tex_id
@@ -336,12 +456,89 @@ class Tex:
         """The cell's column index, as an axis expression."""
         return _NamedAxis("col")
 
-    def highlight(self, selector: Selector, *, color: str = "COLOR-YELLOW") -> None:
+    def highlight(
+        self, selector: Selector, *, color: str = "COLOR-YELLOW", matrix: int = 0
+    ) -> None:
         """Paint the cells the selector weights, in `color` (a palette name is
-        resolved to hex here; any other CSS color passes through)."""
+        resolved to hex here; any other CSS color passes through).
+
+        `matrix` is the 0-based occurrence index of which matrix in the formula
+        to paint, in document (source) order — for a formula with more than one
+        matrix. It defaults to 0 (the first / only matrix) and is omitted from
+        the wire JSON when 0, so single-matrix formulas are unchanged. Each
+        highlight carries its own index, so different highlights on one formula
+        may target different matrices.
+
+        Python does NOT parse the LaTeX to count matrices — you supply the
+        integer — so you must count the SAME way the browser does: count only
+        genuine matrices, in source order, SKIPPING equation-layout blocks.
+        Skip: `aligned`, `align`, `split`, `alignat`, `gathered`, `gather`, `CD`.
+        Count: `matrix` / `pmatrix` / `bmatrix` / `Bmatrix` / `vmatrix` /
+        `Vmatrix` (and `*`-variants), plain `array`, `cases` / `dcases` /
+        `rcases`, `smallmatrix`, `subarray`. So in
+        `\\begin{aligned} ... \\begin{pmatrix}...\\end{pmatrix} ... \\end{aligned}`
+        the pmatrix is matrix index 0 (the aligned wrapper is not counted). An
+        out-of-range index is non-fatal browser-side (that highlight paints
+        nothing; the rest still render), so no error is raised here."""
         _bindings(self.id)["highlights"].append(
-            {"selector": _as_selector(selector), "color": _resolve_color(color)}
+            _highlight_entry(_as_selector(selector), color, matrix)
         )
+
+    def __getitem__(self, key) -> _Region:
+        """numpy-style cell region: `M[3:, 4:]`, `M[:, c]`, `M[r, ...]`.
+
+        Each index constrains one axis (0 = row, 1 = col, ...): a slice is an
+        axis-aligned box (`start` inclusive, `stop` exclusive), a bare int or
+        node is an exact index (`==`). A node as a `start` or an index stays
+        reactive — retarget it with `\\scalar` and the region follows. Omitted
+        or `:` axes are unconstrained; a trailing `...` documents that. Returns a
+        paintable region: `M[3:, 4:].highlight(color="pink")`. Cross-axis
+        relations (diagonals, triangles) are NOT boxes — use the axis operators
+        or `.diag()`/`.triu()`/`.tril()`."""
+        keys = key if isinstance(key, tuple) else (key,)
+        # Ellipsis is a no-op (unmentioned axes are already unconstrained), but
+        # accepted at the end for readability. Use identity — `==` is overloaded.
+        if any(k is Ellipsis for k in keys):
+            if sum(1 for k in keys if k is Ellipsis) > 1 or keys[-1] is not Ellipsis:
+                raise TexError(
+                    "'...' is only supported as the final index "
+                    "(trailing axes are unconstrained by default)"
+                )
+            keys = keys[:-1]
+        parts: list[Selector] = []
+        for axis_i, k in enumerate(keys):
+            ax = dim(axis_i)
+            if isinstance(k, slice):
+                if k.step not in (None, 1):
+                    raise TexError("slice step is not supported in a cell region")
+                if k.start is not None:
+                    parts.append(ax.ge(k.start))  # inclusive start (node or int)
+                if k.stop is not None:
+                    parts.append(ax.lt(k.stop))  # exclusive stop -> < stop (node or int)
+            elif isinstance(k, GNode) or (isinstance(k, int) and not isinstance(k, bool)) or isinstance(k, str):
+                parts.append(ax.eq(k))  # exact index
+            else:
+                raise TexError(f"unsupported cell index {k!r}: use an int, a node, a node id, or a slice")
+        if not parts:
+            raise TexError(
+                "cell region selects the whole matrix — constrain at least one axis"
+            )
+        sel: Selector = parts[0]
+        for p in parts[1:]:
+            sel = sel.and_(p)
+        return _Region(self.id, sel._json())
+
+    def diag(self, k: int = 0) -> _Region:
+        """The `k`-th diagonal (`col - row == k`; `k=0` is the main diagonal)."""
+        return _Region(self.id, cols.sub(rows).eq(k)._json())
+
+    def triu(self, k: int = 0) -> _Region:
+        """Upper triangle from the `k`-th diagonal up (`col - row >= k`)."""
+        return _Region(self.id, cols.sub(rows).ge(k)._json())
+
+    def tril(self, k: int = 0) -> _Region:
+        """Lower triangle from the `k`-th diagonal down (`col - row <= k`)."""
+        return _Region(self.id, cols.sub(rows).le(k)._json())
 
     # -- slot families ------------------------------------------------------
 
@@ -360,7 +557,7 @@ class Tex:
 
 
 def tex(tex_id: str) -> Tex:
-    """A handle to the `$$[#id]$$` formula in the current article, for binding
+    """A handle to the `$$…$$` formula (by its `%id:` id) in the current article, for binding
     values and highlights to it. Its bindings record on the active store's
     texatlas channel, harvested (not emitted) into the compiled article."""
     if not isinstance(tex_id, str) or not tex_id:
