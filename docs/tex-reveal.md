@@ -7,23 +7,29 @@ highlight, but the paint is **opacity**, not color.
 
 Like the other two effects, reveal records on the store's texatlas channel and is
 harvested by `harvest_tex_bindings` (never emitted as DSL). Reactivity comes from
-the store node a selector references — drive it with `\scalar` / `\set-bool` /
-`\animate` on an ordinary CommandLink and the revealed region follows. There is
-**no new DSL keyword**.
+the store node a selector references — change it in a CommandLink and the revealed
+region follows. In a pygeomatic article a CommandLink holds **Python**, and
+article mode is last-write-wins, so you drive a gate by *reassigning* it
+(`b = gm.bool_(True)`, `k = gm.scalar(1)`) or animate a scalar with
+`gm.animate(k, 3)`. There is **no new tex API and no new DSL keyword**.
 
 ```python
 import pygeomatic as gm
-from pygeomatic import rows, cols
 ```
 
+The axis handles are `gm.rows` / `gm.cols` (and `gm.dim(i)`). Inside a pygeomatic
+article fence only `gm` and `group` are in scope, so always reach them through
+`gm.` — `gm.rows`, not a bare `rows`. (`from pygeomatic import rows, cols` also
+works in standalone scripts, but not in an article.)
+
 A **gate** is just a store node. A boolean reads best for an on/off reveal
-(`gm.bool_(False)` makes a false gate, toggled by `\set-bool b true`); a scalar
-(`gm.scalar(0)`) gives an animatable sweep (`\animate k 3`). A bare gate node
-passed to `.reveal(...)` lowers to the `{node}` selector leaf
-(`weight = clamp(0, v, 1)`) — no dummy comparison needed.
+(`gm.bool_(False)` makes a false gate, flipped on by reassigning it:
+`b = gm.bool_(True)`); a scalar (`gm.scalar(0)`) gives an animatable sweep
+(`gm.animate(k, 3)`). A bare gate node passed to `.reveal(...)` lowers to the
+`{node}` selector leaf (`weight = clamp(0, v, 1)`) — no dummy comparison needed.
 
 > **Count, not index.** For "reveal the first N", use **strict** `<`
-> (`rows < k`), so the gate node = *how many* lines/rows/cols show and `k = 0`
+> (`gm.rows < k`), so the gate node = *how many* lines/rows/cols show and `k = 0`
 > shows nothing. `<=` (index) leaves the first one always visible — an
 > off-by-one. Same for matrix rows/cols and derivation lines.
 
@@ -47,7 +53,7 @@ b = gm.bool_(False)             # false gate
 t = gm.tex("pyth")
 t.underbrace.reveal(b)          # brace + "hypotenuse" hidden until b; c^2 stays
 ```
-Click to reveal: {the hypotenuse}(\set-bool b true)
+Click to reveal: {the hypotenuse}(b = gm.bool_(True))
 ````
 
 Reveal only the label (brace stays), or only the body:
@@ -88,21 +94,21 @@ $$
 ```python
 k = gm.scalar(0)
 d = gm.tex("deriv")
-d.rows().reveal(rows < k)        # k = number of lines shown; k = 0 shows nothing
+d.rows().reveal(gm.rows < k)     # k = number of lines shown; k = 0 shows nothing
 ```
-Step: {line 1}(k = \scalar 1) · {line 2}(k = \scalar 2) · {line 3}(k = \scalar 3)
+Step: {line 1}(k = gm.scalar(1)) · {line 2}(k = gm.scalar(2)) · {line 3}(k = gm.scalar(3))
 ````
 
-`{Play}(\animate k 3)` crossfades each appearing line and exports to video for
-free. A single specific line, gated by a bool:
+`{Play}(gm.animate(k, 3))` crossfades each appearing line and exports to video
+for free. A single specific line, gated by a bool:
 
 ```python
-d.rows().reveal((rows == 2) & b)   # last line only, on when b is true
+d.rows().reveal((gm.rows == 2) & b)   # last line only, on when b is true
 ```
 
 For a formula with more than one equation-layout block, pick which with
 `align=N` (0-based source order, counting only the equation-layout arrays):
-`d.rows().reveal(rows < k, align=1)`.
+`d.rows().reveal(gm.rows < k, align=1)`.
 
 ---
 
@@ -121,13 +127,13 @@ k = gm.scalar(0)
 M = gm.tex("mat")
 M.reveal(M.cols() < k)           # k = number of columns shown; col j shows when k > j
 ```
-Build it up: {1 col}(k = \scalar 1) · {2 cols}(k = \scalar 2) · {3 cols}(k = \scalar 3)
+Build it up: {1 col}(k = gm.scalar(1)) · {2 cols}(k = gm.scalar(2)) · {3 cols}(k = gm.scalar(3))
 ````
 
 ```python
-M.reveal(M.rows() < k)                   # row by row; {Fill}(\animate k 3)
+M.reveal(M.rows() < k)                   # row by row; {Fill}(gm.animate(k, 3))
 M.reveal((M.rows() == 1) & b)            # a single row, gated by a bool
-M.reveal((cols - rows) <= k)             # diagonal wavefront (grow the upper triangle)
+M.reveal((gm.cols - gm.rows) <= k)       # diagonal wavefront (grow the upper triangle)
 M.reveal(M.cols() < k, matrix=1)         # the 2nd matrix in a multi-matrix formula
 ```
 

@@ -207,8 +207,9 @@ Move it: {row 1}(r = gm.scalar(1)) · {row 2}(r = gm.scalar(2))
   `"#f472b6"` / CSS names pass through. Full reference:
   [docs/tex-highlight-ergonomics.md](docs/tex-highlight-ergonomics.md).
 - **Reveal** (fade a part in): same selector machine, painting **opacity**
-  instead of color, so `\scalar` / `\set-bool` / `\animate` on a gate node makes
-  a piece of the formula appear. Three targets — an over/underbrace + label
+  instead of color, so changing a gate node — reassigning it (`b = gm.bool_(True)`,
+  `k = gm.scalar(1)`) or animating it (`gm.animate(k, 3)`) in a CommandLink —
+  makes a piece of the formula appear. Three targets — an over/underbrace + label
   (`t.underbrace.reveal(b)`, body stays visible; `.label` / `.body` for just
   that part), a derivation line-by-line (`d.rows().reveal(rows < k)` — `k` lines
   shown), or a matrix's rows/columns (`M.reveal(M.cols() < k)`). A bare gate

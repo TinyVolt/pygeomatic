@@ -3,7 +3,8 @@
 A `$$…$$` formula in a markdown article (given an id by a `%id:` line as its
 first line) is made addressable and reactive
 NOT by any DSL command but by declarative *bindings* recorded here. Three
-effects, all driven by store nodes (`\\scalar` / `\\set-bool` / `\\animate`):
+effects, all driven by *changing a store node* (reassigning it — `b = gm.bool_(True)`,
+`k = gm.scalar(1)` — or `gm.animate(k, 3)` — in a CommandLink):
 
 - **value** — a schema slot shows a store node's live value
   (`energy.int.upper.bind(a)`);
