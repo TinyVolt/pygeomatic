@@ -566,6 +566,206 @@ def test_register_tex_schema_extends_families():
 
 
 # ---------------------------------------------------------------------------
+# Reveal effect (opacity) — brace / derivation / matrix targets
+# ---------------------------------------------------------------------------
+
+
+def test_reveal_bare_brace_splices_label_slot():
+    # A bare over/underbrace address reveals the brace glyph + label (body stays).
+    with gm.Store() as s:
+        b = gm.bool_(0, out="b")
+        t = gm.tex("pyth")
+        t.underbrace.reveal(b)
+    assert gm.harvest_tex_bindings(s) == {
+        "pyth": {"reveals": [{"slot": "underbrace", "selector": {"node": "b"}}]}
+    }
+
+
+def test_reveal_brace_label_and_body_addresses():
+    with gm.Store() as s:
+        b = gm.bool_(0, out="b")
+        t = gm.tex("f")
+        t.underbrace.label.reveal(b)
+        t.overbrace.body.reveal(b)
+    slots = [r["slot"] for r in gm.harvest_tex_bindings(s)["f"]["reveals"]]
+    assert slots == ["underbrace.label", "overbrace.body"]
+
+
+def test_reveal_brace_occurrence_index():
+    with gm.Store() as s:
+        b1 = gm.bool_(0, out="b1")
+        b2 = gm.bool_(0, out="b2")
+        t = gm.tex("expand")
+        t.underbraces[0].reveal(b1)
+        t.underbraces[1].reveal(b2)
+    slots = [r["slot"] for r in gm.harvest_tex_bindings(s)["expand"]["reveals"]]
+    assert slots == ["underbrace[0]", "underbrace[1]"]
+
+
+def test_reveal_bare_node_lowers_to_node_leaf():
+    # A bare gate node/bool becomes the `{node}` SelectorExpr leaf.
+    with gm.Store() as s:
+        b = gm.bool_(0, out="b")
+        gm.tex("f").underbrace.reveal(b)
+    (r,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
+    assert r["selector"] == {"node": "b"}
+
+
+def test_reveal_gate_by_node_id_string():
+    with gm.Store() as s:
+        gm.bool_(0, out="b")
+        gm.tex("f").underbrace.reveal("b")
+    (r,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
+    assert r["selector"] == {"node": "b"}
+
+
+def test_reveal_unknown_gate_node_rejected():
+    with gm.Store():
+        with pytest.raises(TexError, match="no node 'nope'"):
+            gm.tex("f").underbrace.reveal("nope")
+
+
+def test_reveal_derivation_is_an_align_target():
+    with gm.Store() as s:
+        k = gm.scalar(0, out="k")
+        d = gm.tex("deriv")
+        d.rows().reveal(gm.rows < k)
+    assert gm.harvest_tex_bindings(s) == {
+        "deriv": {
+            "reveals": [
+                {
+                    "align": 0,
+                    "selector": {
+                        "op": "lt",
+                        "axis": {"axis": "row"},
+                        "value": {"node": "k"},
+                    },
+                }
+            ]
+        }
+    }
+
+
+def test_reveal_align_occurrence_index():
+    with gm.Store() as s:
+        b = gm.bool_(0, out="b")
+        gm.tex("d").rows().reveal(b, align=2)
+    (r,) = gm.harvest_tex_bindings(s)["d"]["reveals"]
+    assert r["align"] == 2
+
+
+def test_reveal_single_line_gated_by_bool():
+    # (rows == 2) & b — a bare node ANDed into a real selector.
+    with gm.Store() as s:
+        b = gm.bool_(0, out="b")
+        d = gm.tex("d")
+        d.rows().reveal((gm.rows == 2) & b)
+    (r,) = gm.harvest_tex_bindings(s)["d"]["reveals"]
+    assert r["selector"] == {
+        "op": "and",
+        "a": {"op": "eq", "axis": {"axis": "row"}, "value": {"const": 2}},
+        "b": {"node": "b"},
+    }
+
+
+def test_reveal_matrix_target_keeps_index_zero():
+    # Unlike highlight, the matrix index is the target discriminator, so it is
+    # always written to the wire — even when 0.
+    with gm.Store() as s:
+        k = gm.scalar(0, out="k")
+        M = gm.tex("mat")
+        M.reveal(M.cols() < k)
+    assert gm.harvest_tex_bindings(s) == {
+        "mat": {
+            "reveals": [
+                {
+                    "matrix": 0,
+                    "selector": {
+                        "op": "lt",
+                        "axis": {"axis": "col"},
+                        "value": {"node": "k"},
+                    },
+                }
+            ]
+        }
+    }
+
+
+def test_reveal_matrix_picks_occurrence():
+    with gm.Store() as s:
+        k = gm.scalar(0, out="k")
+        M = gm.tex("mat")
+        M.reveal(M.cols() < k, matrix=1)
+    (r,) = gm.harvest_tex_bindings(s)["mat"]["reveals"]
+    assert r["matrix"] == 1
+
+
+def test_reveal_collapse_mode_recorded_for_slot():
+    with gm.Store() as s:
+        b = gm.bool_(0, out="b")
+        gm.tex("f").underbrace.reveal(b, mode="collapse")
+    (r,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
+    assert r["mode"] == "collapse"
+
+
+def test_reveal_fade_mode_is_omitted_as_default():
+    with gm.Store() as s:
+        b = gm.bool_(0, out="b")
+        gm.tex("f").underbrace.reveal(b, mode="fade")
+    (r,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
+    assert "mode" not in r
+
+
+def test_reveal_matrix_rejects_collapse():
+    with gm.Store():
+        b = gm.bool_(0, out="b")
+        with pytest.raises(TexError, match="only mode='fade'"):
+            gm.tex("m").reveal(b, mode="collapse")
+
+
+def test_reveal_invalid_mode_rejected():
+    with gm.Store():
+        b = gm.bool_(0, out="b")
+        with pytest.raises(TexError, match="reveal mode must be"):
+            gm.tex("f").underbrace.reveal(b, mode="pop")
+
+
+def test_reveal_negative_align_and_matrix_rejected():
+    with gm.Store():
+        b = gm.bool_(0, out="b")
+        with pytest.raises(TexError, match="align index"):
+            gm.tex("d").rows().reveal(b, align=-1)
+        with pytest.raises(TexError, match="matrix index"):
+            gm.tex("m").reveal(b, matrix=-1)
+
+
+def test_reveal_non_selector_non_node_rejected():
+    with gm.Store():
+        with pytest.raises(TexError, match="selector or a gate node"):
+            gm.tex("m").reveal(123)
+
+
+def test_reveal_absent_when_only_values_and_highlights():
+    # A formula with no reveals drops the key entirely (byte-parity with v1).
+    with gm.Store() as s:
+        a = gm.scalar(1, out="a")
+        gm.tex("f").int.upper.bind(a)
+    assert "reveals" not in gm.harvest_tex_bindings(s)["f"]
+
+
+def test_tex_axis_still_builds_highlight_selectors():
+    # t.rows()/t.cols() now return a tex-aware axis but must still compose into
+    # highlight selectors exactly as the free axes do.
+    with gm.Store() as s1:
+        M = gm.tex("M")
+        M.highlight(M.rows().eq(0))
+    with gm.Store() as s2:
+        M = gm.tex("M")
+        M.highlight(gm.rows == 0)
+    assert gm.harvest_tex_bindings(s1) == gm.harvest_tex_bindings(s2)
+
+
+# ---------------------------------------------------------------------------
 # Article compiler integration
 # ---------------------------------------------------------------------------
 
@@ -587,6 +787,20 @@ def test_compile_article_snapshots_bindings():
     # DSL spans are unaffected; the tex op recorded no span.
     assert "{show}(pt = \\point 1 2)" in out
     assert "tex" not in out.split("<!-- texatlas")[0]  # no tex text leaked into the article body
+
+
+def test_compile_article_snapshots_reveals():
+    md = (
+        "# Doc\n\n"
+        "```pygeomatic\n"
+        "b = gm.bool_(0, out='b')\n"
+        "gm.tex('pyth').underbrace.reveal(b)\n"
+        "```\n\n"
+        "Some text.\n"
+    )
+    out = gm.compile_article(md)
+    assert "<!-- texatlas:v1" in out
+    assert '"pyth":{"reveals":[{"slot":"underbrace","selector":{"node":"b"}}]}' in out
 
 
 def test_compile_article_without_bindings_has_no_manifest():

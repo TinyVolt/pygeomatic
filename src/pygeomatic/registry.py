@@ -217,6 +217,12 @@ def _resolve_arg(fdef: FunctionDef, p: P, arg: Any, store: Store) -> tuple[ArgTo
         if p.type == "Bool":
             node = _implicit_bool(arg, store)
             return node.ref, node
+        if p.type == "Any":
+            # A bare Python bool in an untyped slot is just its 0/1 value (bool
+            # is an int subclass), like passing 1/0 — e.g. `gm.bool_(True)`
+            # records `\bool 1`. Scalar/Text params stay strict (they reject a
+            # bool below), so this only relaxes genuinely untyped parameters.
+            return int(arg), int(arg)
         raise TypeError(
             f"\\{fdef.keyword}: parameter '{p.name}' expects {p.type}, got bool"
         )

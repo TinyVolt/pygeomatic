@@ -2,10 +2,18 @@
 
 A `$$…$$` formula in a markdown article (given an id by a `%id:` line as its
 first line) is made addressable and reactive
-NOT by any DSL command but by declarative *bindings* recorded here: a schema
-slot can show a store node's live value (`energy.int.upper.bind(a)`), and matrix
-cells can be highlighted by selectors built from store nodes
-(`M.highlight(M.rows().eq(r), color="pink")`).
+NOT by any DSL command but by declarative *bindings* recorded here. Three
+effects, all driven by store nodes (`\\scalar` / `\\set-bool` / `\\animate`):
+
+- **value** — a schema slot shows a store node's live value
+  (`energy.int.upper.bind(a)`);
+- **highlight** — matrix cells painted a color by a selector over store nodes
+  (`M.highlight(M.rows().eq(r), color="pink")`);
+- **reveal** — a part of the formula fades in when a node says so: an
+  over/underbrace (`t.underbrace.reveal(b)`), a derivation line-by-line
+  (`d.rows().reveal(rows < k)`), or a matrix's rows/columns
+  (`M.reveal(M.cols() < k)`). Same selector machine as highlight, painting
+  opacity instead of color.
 
 Three properties define the shape (see the texatlas design memo):
 
@@ -80,6 +88,13 @@ def _register_builtin_schema() -> None:
     register_tex_schema("prod", ("lower", "upper", "body"))
     register_tex_schema("frac", ("num", "denom"))
     register_tex_schema("sqrt", ("body",))
+    # Over/underbrace are one browser family (`horizBrace`, keyed off `isOver`);
+    # here they are two named families with the same slots. The BARE family
+    # address (`t.underbrace`) is the annotation — brace glyph + label; the body
+    # stays visible. `.body` / `.label` address just those parts. Used for the
+    # reveal effect (`t.underbrace.reveal(gate)`), not for value binding.
+    register_tex_schema("underbrace", ("body", "label"))
+    register_tex_schema("overbrace", ("body", "label"))
 
 
 _register_builtin_schema()
@@ -140,6 +155,40 @@ def _highlight_entry(selector_json: dict, color: str, matrix: int) -> dict:
     entry: dict = {"selector": selector_json, "color": _resolve_color(color)}
     if _matrix_index(matrix):
         entry["matrix"] = matrix
+    return entry
+
+
+def _align_index(align: int) -> int:
+    """Validate an author-supplied align occurrence index (a non-negative int).
+
+    This is which equation-layout array (`aligned`/`align`/`split`/`alignat`/
+    `gather`/`CD`) in the formula a reveal fades line-by-line, counted in source
+    order — the arrays that `matrix`/highlight deliberately SKIP. Python does not
+    parse the LaTeX; the author supplies the integer (default 0)."""
+    if isinstance(align, bool) or not isinstance(align, int) or align < 0:
+        raise TexError(f"align index must be a non-negative int, got {align!r}")
+    return align
+
+
+def _reveal_mode(mode: str) -> str:
+    """Validate a reveal paint mode. `"fade"` (default) paints opacity and keeps
+    the layout; `"collapse"` also removes the slot's space (avoid it for matrix
+    cells — it breaks the grid/brackets)."""
+    if mode not in ("fade", "collapse"):
+        raise TexError(f"reveal mode must be 'fade' or 'collapse', got {mode!r}")
+    return mode
+
+
+def _reveal_entry(target: dict, selector: "Selector", mode: str) -> dict:
+    """A `RevealBinding` wire entry: exactly one target descriptor
+    (`slot` | `align` | `matrix`) plus a selector giving each cell an opacity
+    weight in [0, 1]. `mode` is omitted when `"fade"` (the default) so the wire
+    JSON stays minimal. A bare gate node/bool is accepted as the selector (the
+    `{node}` leaf — the degenerate all-or-nothing case)."""
+    entry: dict = dict(target)
+    entry["selector"] = _as_selector(selector)
+    if _reveal_mode(mode) != "fade":
+        entry["mode"] = mode
     return entry
 
 
@@ -279,6 +328,33 @@ rows: AxisExpr = _NamedAxis("row")
 cols: AxisExpr = _NamedAxis("col")
 
 
+class _TexAxis(_NamedAxis):
+    """A row/col axis that remembers its formula, returned by `t.rows()` /
+    `t.cols()`. It behaves exactly like the free `rows`/`cols` axes for building
+    selectors (`t.rows().eq(r)`), and additionally carries `.reveal(...)` to fade
+    in an equation-layout / derivation block line-by-line (the `align` target).
+    The axis identity does not enter the align target — the whole aligned block
+    is the target and the selector (e.g. `rows < k`) picks which lines show."""
+
+    def __init__(self, tex_id: str, axis: str) -> None:
+        super().__init__(axis)
+        self._tex_id = tex_id
+
+    def reveal(
+        self, selector: "Selector", *, align: int = 0, mode: str = "fade"
+    ) -> None:
+        """Progressively reveal the lines of an equation-layout / derivation
+        block: `d.rows().reveal(rows < k)` shows `k` lines (`k = 0` shows none).
+
+        `align` is the 0-based occurrence index of which equation-layout array to
+        reveal (source order, counting only `aligned`/`align`/`split`/`alignat`/
+        `gather`/`CD` — the arrays highlight/`matrix` skip); default 0. `mode` is
+        `"fade"` (opacity, keeps layout) or `"collapse"` (also removes space)."""
+        _bindings(self._tex_id)["reveals"].append(
+            _reveal_entry({"align": _align_index(align)}, selector, mode)
+        )
+
+
 class Selector:
     """A highlight selector: `(cell, env) -> weight`. Combine with `and_`/`or_`
     (min/max) or fade the whole selection with `scale`."""
@@ -302,10 +378,18 @@ class Selector:
         return self._json_
 
 
-def _as_selector(value: "Selector") -> dict:
-    if not isinstance(value, Selector):
-        raise TexError(f"expected a selector, got {type(value).__name__}")
-    return value._json_
+def _as_selector(value: Union["Selector", GNode, str]) -> dict:
+    """The selector JSON for a value that is either a built `Selector` or a bare
+    gate node/id. A bare node lowers to the `{node}` `SelectorExpr` leaf
+    (`weight = clamp(0, v, 1)`), so a bool gate is expressible without a dummy
+    comparison — e.g. `t.underbrace.reveal(b)` or `(rows == 2) & b`."""
+    if isinstance(value, Selector):
+        return value._json_
+    if isinstance(value, (GNode, str)):
+        return {"node": _node_id(value, what="selector gate")}
+    raise TexError(
+        f"expected a selector or a gate node, got {type(value).__name__}"
+    )
 
 
 class _Region(Selector):
@@ -376,6 +460,18 @@ class _Slot:
             entry["fmt"] = fmt
         _bindings(self._tex_id)["values"].append(entry)
 
+    def reveal(self, selector: "Selector", *, mode: str = "fade") -> None:
+        """Fade this slot in when the `selector` says so (opacity from its weight
+        in [0, 1]). A bare gate node/bool is the all-or-nothing case
+        (`t.underbrace.label.reveal(b)`); pass a real selector for a progressive
+        sweep. `mode` is `"fade"` (default, keeps layout) or `"collapse"` (also
+        removes the slot's space). For a bare over/underbrace address
+        (`t.underbrace.reveal(b)`) the browser reveals the brace glyph + label
+        while the body stays visible; `.label` / `.body` address just that part."""
+        _bindings(self._tex_id)["reveals"].append(
+            _reveal_entry({"slot": self._address}, selector, mode)
+        )
+
 
 class _Family:
     """A LaTeX command family occurrence (`tex.int`, `tex.ints[1]`). Bind the
@@ -392,6 +488,11 @@ class _Family:
 
     def bind(self, node: Union[GNode, str], *, show: str = "value", fmt: Optional[str] = None) -> None:
         _Slot(self._tex_id, self._base).bind(node, show=show, fmt=fmt)
+
+    def reveal(self, selector: "Selector", *, mode: str = "fade") -> None:
+        """Reveal this whole family occurrence (the bare address, e.g. a brace's
+        glyph + label — see `_Slot.reveal`)."""
+        _Slot(self._tex_id, self._base).reveal(selector, mode=mode)
 
     def __getattr__(self, name: str) -> _Slot:
         # Only slot names reach here (real methods/attrs resolve first). Let
@@ -448,13 +549,15 @@ class Tex:
 
     # -- matrix highlights --------------------------------------------------
 
-    def rows(self) -> AxisExpr:
-        """The cell's row index, as an axis expression."""
-        return _NamedAxis("row")
+    def rows(self) -> _TexAxis:
+        """The cell's row index, as an axis expression. Also carries `.reveal()`
+        to fade in a derivation / equation-layout block line-by-line
+        (`d.rows().reveal(rows < k)`)."""
+        return _TexAxis(self.id, "row")
 
-    def cols(self) -> AxisExpr:
+    def cols(self) -> _TexAxis:
         """The cell's column index, as an axis expression."""
-        return _NamedAxis("col")
+        return _TexAxis(self.id, "col")
 
     def highlight(
         self, selector: Selector, *, color: str = "COLOR-YELLOW", matrix: int = 0
@@ -482,6 +585,28 @@ class Tex:
         nothing; the rest still render), so no error is raised here."""
         _bindings(self.id)["highlights"].append(
             _highlight_entry(_as_selector(selector), color, matrix)
+        )
+
+    def reveal(
+        self, selector: Selector, *, matrix: int = 0, mode: str = "fade"
+    ) -> None:
+        """Progressively reveal the rows/columns of a matrix — the same selector
+        machine as `highlight`, painting opacity instead of color:
+        `M.reveal(M.cols() < k)` shows `k` columns (`k = 0` shows none). A bare
+        gate node/bool reveals the whole matrix all-or-nothing.
+
+        `matrix` is the 0-based occurrence index of which matrix to reveal (same
+        source-order counting rule as `highlight`'s `matrix=`; unlike highlight
+        it is always written to the wire — it is the target discriminator). Only
+        `mode="fade"` is supported: `collapse` would break the grid and brackets,
+        so opacity keeps the shape stable while cells fade in."""
+        if _reveal_mode(mode) == "collapse":
+            raise TexError(
+                "matrix reveal supports only mode='fade' — collapse would remove "
+                "cell space and break the grid/brackets; opacity keeps the shape"
+            )
+        _bindings(self.id)["reveals"].append(
+            _reveal_entry({"matrix": _matrix_index(matrix)}, selector, mode)
         )
 
     def __getitem__(self, key) -> _Region:
@@ -571,16 +696,18 @@ def tex(tex_id: str) -> Tex:
 
 
 def _bindings(tex_id: str) -> dict:
-    return current_store().tex_bindings.setdefault(tex_id, {"values": [], "highlights": []})
+    return current_store().tex_bindings.setdefault(
+        tex_id, {"values": [], "highlights": [], "reveals": []}
+    )
 
 
 def harvest_tex_bindings(store=None) -> dict:
     """The session's recorded texatlas bindings as the wire manifest
-    `{ texId: { "values": [...], "highlights": [...] } }` — the exact JSON the
-    TypeScript runtime consumes (empty arrays and formulas with no bindings are
-    dropped). This is how the publish compiler snapshots bindings into an
-    article without the author calling any emit; it is the tex analogue of
-    `gm.emit()` for the command tape."""
+    `{ texId: { "values": [...], "highlights": [...], "reveals": [...] } }` — the
+    exact JSON the TypeScript runtime consumes (empty arrays and formulas with no
+    bindings are dropped). This is how the publish compiler snapshots bindings
+    into an article without the author calling any emit; it is the tex analogue
+    of `gm.emit()` for the command tape."""
     store = store or current_store()
     manifest: dict = {}
     for tex_id, b in store.tex_bindings.items():
@@ -589,6 +716,8 @@ def harvest_tex_bindings(store=None) -> dict:
             entry["values"] = b["values"]
         if b["highlights"]:
             entry["highlights"] = b["highlights"]
+        if b.get("reveals"):
+            entry["reveals"] = b["reveals"]
         if entry:
             manifest[tex_id] = entry
     return manifest

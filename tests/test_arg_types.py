@@ -125,6 +125,22 @@ def test_numeric_literal_accepted_for_scalar_and_any():
         gm.reduce_sum(gm.array(1, 2), 0)  # dim is Scalar/Any
 
 
+def test_python_bool_accepted_for_any_param():
+    # A bare Python bool in an untyped (Any) slot is its 0/1 value, like 1/0.
+    with gm.Store() as s:
+        t = gm.bool_(True, out="t")
+        f = gm.bool_(False, out="f")
+    assert (t.numeric, f.numeric) == (True, False)
+    assert gm.emit(s) == "t = \\bool 1\nf = \\bool 0"
+
+
+def test_python_bool_still_rejected_for_scalar_param():
+    # The Any relaxation must not leak to typed numeric params.
+    with gm.Store():
+        with pytest.raises(TypeError, match="expects Point.*got bool|expects Scalar.*got bool"):
+            gm.point(True, 2)
+
+
 def test_node_coercion_on_by_default():
     # Scalar -> Text is an engine coercion: allowed by default, strict only
     # inside allow_coercions(False).
