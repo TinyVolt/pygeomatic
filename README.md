@@ -206,6 +206,16 @@ Move it: {row 1}(r = gm.scalar(1)) · {row 2}(r = gm.scalar(2))
   behind a click. Palette names (`"pink"`, `"BLUE"`) resolve to hex; raw
   `"#f472b6"` / CSS names pass through. Full reference:
   [docs/tex-highlight-ergonomics.md](docs/tex-highlight-ergonomics.md).
+- **Reveal** (fade a part in): same selector machine, painting **opacity**
+  instead of color, so changing a gate node — reassigning it (`b = gm.bool_(True)`,
+  `k = gm.scalar(1)`) or animating it (`gm.animate(k, 3)`) in a CommandLink —
+  makes a piece of the formula appear. Three targets — an over/underbrace + label
+  (`t.underbrace.reveal(b)`, body stays visible; `.label` / `.body` for just
+  that part), a derivation line-by-line (`d.rows().reveal(rows < k)` — `k` lines
+  shown), or a matrix's rows/columns (`M.reveal(M.cols() < k)`). A bare gate
+  node/bool is the all-or-nothing case (`gm.bool_(False)` makes a false gate); a
+  scalar gives an animatable sweep. Full reference:
+  [docs/tex-reveal.md](docs/tex-reveal.md).
 
 Two rules that will bite otherwise:
 
