@@ -32,8 +32,30 @@ def test_palette_is_derived_from_the_macro():
         assert set(pal) == set(ids)
         assert pal.BLUE is st.nodes["COLOR-BLUE"]
         assert {cid: n.numeric for cid, n in pal.items()} == gm.PALETTE
-        gm.load_colors()  # idempotent: no second \load-colors line
     assert gm.emit(st) == "\\load-colors"
+
+
+def test_load_colors_is_deterministic_across_clear():
+    # load_colors mirrors the DSL 1:1: it emits \load-colors on every call, with
+    # no hidden idempotency. \clear wipes the COLOR-* nodes, so each scene must
+    # reload them — the emitted DSL keeps the palette defined past every \clear.
+    with gm.Store() as st:
+        gm.clear()
+        c = gm.load_colors()
+        gm.clear()
+        c = gm.load_colors()
+        s = gm.scalar(1)
+        gm.set_stroke(s, c.GREEN)
+    dsl = gm.emit(st)
+    assert dsl.count("\\load-colors") == 2
+    assert dsl.splitlines() == [
+        "\\clear",
+        "\\load-colors",
+        "\\clear",
+        "\\load-colors",
+        "s = \\scalar 1",
+        "\\set-stroke s COLOR-GREEN",
+    ]
 
 
 # --- invocation --------------------------------------------------------------
