@@ -31,9 +31,19 @@ _BUILTIN_SHADOWS = {
 }
 
 
+# Keywords deliberately exposed under a more descriptive python name than the
+# wire keyword (the DSL keyword — and the emitted `\<keyword>` — is unchanged).
+_DESCRIPTIVE_ALIASES = {
+    "plot": "plot_reactive",
+    "partial": "partial_derivative",
+}
+
+
 def python_name(keyword: str) -> str:
     """The pygeomatic attribute name for a DSL keyword (`reduce-sum` → `reduce_sum`,
-    `abs` → `abs_`)."""
+    `abs` → `abs_`, `plot` → `plot_reactive`)."""
+    if keyword in _DESCRIPTIVE_ALIASES:
+        return _DESCRIPTIVE_ALIASES[keyword]
     name = keyword.replace("-", "_")
     if keyword in _BUILTIN_SHADOWS:
         name = f"{name}_"

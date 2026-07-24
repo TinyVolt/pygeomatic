@@ -44,7 +44,9 @@ def backprop(node):
     params=[P("target", "Scalar"), P("param", "Any")],
     category=CATEGORY,
 )
-def partial(target, param_node):
+def partial_derivative(target, param_node):
+    # Computes the partial derivative of `target` w.r.t. `param` (NOT
+    # functools.partial). Emits `\partial`.
     # Mirrors the engine: an Array param broadcasts element-wise into an Array
     # of gradient nodes (PointGradient for Point-like elements, ScalarGradient
     # otherwise). Target must be a single Scalar (engine-enforced).

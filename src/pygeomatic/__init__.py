@@ -175,8 +175,8 @@ from .functions.implementations.intersections import (  # noqa: F401
 from .functions.implementations.curve_functions import (  # noqa: F401
     clear_trail,
     evaluate_polynomial,
-    plot,
     plot_inverse,
+    plot_reactive,
     polynomial,
     trail,
 )
@@ -254,7 +254,7 @@ from .functions.implementations.autograd_functions import (  # noqa: F401
     gradient_descent_step,
     minimize,
     param,
-    partial,
+    partial_derivative,
     reevaluate,
     vector_field,
     zero_grad,
