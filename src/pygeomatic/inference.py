@@ -20,10 +20,13 @@ at jump targets, jumps, and any unmodeled opcode, so a name is only inferred
 when the full data flow from the producing instruction to its STORE was
 understood. Anything unclear — attribute/subscript
 targets, expression statements — falls back to the auto-generated id, as does
-an id that is invalid, engine-auto-shaped (`p1`, `num3`, ...), or already
-taken in the store (loops, system defaults; article mode instead reassigns —
-last-write-wins, see article.py). Python underscores translate to
-DSL dashes (`fwd_traj` → `fwd-traj`). An explicit `out=` always wins; calls
+an id that is invalid or engine-auto-shaped (`p1`, `num3`, ...). A taken
+inferred name is no longer filtered out: it flows into `Store.allocate_id`,
+which raises in plain-authoring mode (the duplicate-id guard that catches
+loop reuse) and reassigns last-write-wins in article/macro replay — so the
+inferred-name path and the explicit-`out=` path share one guard. Python
+underscores translate to DSL dashes (`fwd_traj` → `fwd-traj`). An explicit
+`out=` always wins; calls
 originating inside pygeomatic itself (parse replay, macro bodies) are never
 inferred.
 """
@@ -36,7 +39,7 @@ from types import CodeType, FrameType
 from typing import Optional, Union
 from weakref import WeakKeyDictionary
 
-from .store import ENGINE_AUTO_ID_RE, IDENTIFIER_RE, Store, _article_replay
+from .store import ENGINE_AUTO_ID_RE, IDENTIFIER_RE, Store
 
 _STORE_OPS = frozenset({"STORE_NAME", "STORE_FAST", "STORE_GLOBAL", "STORE_DEREF"})
 
@@ -253,12 +256,6 @@ def infer_out_names(frame, store: Store) -> list[str]:
             if ENGINE_AUTO_ID_RE.match(candidate):
                 # p1/num3/... are the engine's internal auto-name space;
                 # claiming one silently clobbers auxiliary nodes on replay.
-                continue
-            if candidate in store.nodes and not _article_replay.get():
-                # Taken (loop reuse, or a system default like T/F) — an
-                # inferred name never reassigns; only an explicit out= may.
-                # Articles are the exception: `s1 = gm.scalar(1)` there means
-                # what the DSL line `s1 = \scalar 1` means — last-write-wins.
                 continue
             candidates.append(candidate)
         return candidates
