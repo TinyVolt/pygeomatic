@@ -69,16 +69,62 @@ class TexError(ValueError):
 
 SCHEMA: dict[str, tuple[str, ...]] = {}
 
+# The ops each family's slots support. `bind` = value binding (a `ta-slot`
+# splice replacing the slot content with a live value); `reveal` = fade the
+# slot in on a gate (`ta-reveal`). Mirrors the browser's `BRACE_FAMILIES`
+# (schema.ts / applier.ts): under/overbrace are reveal-annotation families whose
+# bare reveal resolves to the SAME label span a value bind would target, so the
+# applier double-splices one span (`ta-slot` + `ta-reveal`) and corrupts the
+# formula. Braces are therefore reveal-only here — a violation the browser can't
+# reject cleanly, so pygeomatic rejects it at the call site instead.
+BIND, REVEAL = "bind", "reveal"
+FAMILY_OPS: dict[str, frozenset[str]] = {}
 
-def register_tex_schema(family: str, slots: Union[tuple[str, ...], list[str]]) -> None:
+
+def register_tex_schema(
+    family: str,
+    slots: Union[tuple[str, ...], list[str]],
+    *,
+    ops: Union[tuple[str, ...], list[str]] = (BIND, REVEAL),
+) -> None:
     """Declare a bindable LaTeX command family and its slot names (mirroring the
-    browser schema). Re-registering a family replaces its slots."""
+    browser schema). `ops` are the operations the family's slots support
+    (`bind` and/or `reveal`; default both). Re-registering replaces the entry."""
     if not isinstance(family, str) or not re.match(r"[a-zA-Z][a-zA-Z0-9-]*\Z", family):
         raise TexError(
             f"invalid schema family {family!r}: must start with a letter and "
             "contain only letters, digits and dashes"
         )
+    bad = [o for o in ops if o not in (BIND, REVEAL)]
+    if bad:
+        raise TexError(f"unknown tex family op(s) {bad!r}: use {BIND!r} and/or {REVEAL!r}")
     SCHEMA[family] = tuple(slots)
+    FAMILY_OPS[family] = frozenset(ops)
+
+
+def _family_of(address: str) -> str:
+    """The family token leading a slot address (`underbrace[1].label` -> `underbrace`)."""
+    m = re.match(r"[a-z]+", address)
+    return m.group(0) if m else address
+
+
+def _require_op(address: str, op: str) -> None:
+    """Guard a bind/reveal against the target family's declared `ops`, raising a
+    TexError at the call site rather than letting the browser mis-splice."""
+    ops = FAMILY_OPS.get(_family_of(address))
+    if ops is None or op in ops:
+        return
+    family = _family_of(address)
+    allowed = "/".join(sorted(ops)) if ops else "no"
+    if op == BIND:
+        raise TexError(
+            f"{family!r} slots are {allowed}-only, not value-bindable: "
+            f"{address!r}. Under/overbrace annotate a reveal — a bare-brace "
+            f"reveal and a value bind resolve to the same label span and "
+            f"collide. Put the live value in a value slot (frac/int/sum/sqrt) "
+            f"or inline instead."
+        )
+    raise TexError(f"{family!r} slots are {allowed}-only, not {op!r}: {address!r}.")
 
 
 def _register_builtin_schema() -> None:
@@ -93,9 +139,11 @@ def _register_builtin_schema() -> None:
     # here they are two named families with the same slots. The BARE family
     # address (`t.underbrace`) is the annotation — brace glyph + label; the body
     # stays visible. `.body` / `.label` address just those parts. Used for the
-    # reveal effect (`t.underbrace.reveal(gate)`), not for value binding.
-    register_tex_schema("underbrace", ("body", "label"))
-    register_tex_schema("overbrace", ("body", "label"))
+    # reveal effect (`t.underbrace.reveal(gate)`), NOT value binding: `ops` marks
+    # them reveal-only so `.bind()` raises here instead of corrupting the formula
+    # in the browser (see FAMILY_OPS).
+    register_tex_schema("underbrace", ("body", "label"), ops=(REVEAL,))
+    register_tex_schema("overbrace", ("body", "label"), ops=(REVEAL,))
 
 
 _register_builtin_schema()
@@ -447,6 +495,7 @@ class _Slot:
         the node's value into the slot; `show="symbol"` registers the link
         without changing the rendered glyph. `fmt` is a number format
         (`".2f"`, `"d"`, or omit to trim to <=4 dp)."""
+        _require_op(self._address, BIND)
         if show not in ("value", "symbol"):
             raise TexError(f"show must be 'value' or 'symbol', got {show!r}")
         if fmt is not None and not _FMT_RE.fullmatch(fmt):
@@ -469,6 +518,7 @@ class _Slot:
         removes the slot's space). For a bare over/underbrace address
         (`t.underbrace.reveal(b)`) the browser reveals the brace glyph + label
         while the body stays visible; `.label` / `.body` address just that part."""
+        _require_op(self._address, REVEAL)
         _bindings(self._tex_id)["reveals"].append(
             _reveal_entry({"slot": self._address}, selector, mode)
         )
