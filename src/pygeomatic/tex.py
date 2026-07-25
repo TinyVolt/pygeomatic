@@ -121,7 +121,7 @@ def _require_op(address: str, op: str) -> None:
             f"{family!r} slots are {allowed}-only, not value-bindable: "
             f"{address!r}. Under/overbrace annotate a reveal — a bare-brace "
             f"reveal and a value bind resolve to the same label span and "
-            f"collide. Put the live value in a value slot (frac/int/sum/sqrt) "
+            f"collide. Put the live value in a value slot (frac/int/sum/prod/sqrt) "
             f"or inline instead."
         )
     raise TexError(f"{family!r} slots are {allowed}-only, not {op!r}: {address!r}.")
