@@ -42,6 +42,7 @@ import json
 
 from .coercions import allow_coercions
 from .emit import emit, render_command
+from .latex_lint import lint_latex
 from .parse import DslParseError, parse_dsl
 from .store import Store, _article_replay, _auto_create_enabled, current_store
 from .tex import harvest_tex_bindings
@@ -228,6 +229,36 @@ def _scan_spans(text: str) -> list[_Span]:
     return spans
 
 
+def _iter_math(text: str, base_lineno: int):
+    """Yield `(latex_body, lineno)` for each `$…$` / `$$…$$` region in `text` —
+    the inverse of `_scan_spans`' skip rule, so the linter sees exactly the
+    regions the span scanner passes over."""
+    i, n = 0, len(text)
+    while i < n:
+        if text[i] == "$":
+            end = _skip_math_at(text, i)
+            if end is not None:
+                is_block = text[i + 1 : i + 2] == "$"
+                open_ = i + (2 if is_block else 1)
+                close = end - (2 if is_block else 1)
+                yield text[open_:close], base_lineno + text[:i].count("\n")
+                i = end
+                continue
+        i += 1
+
+
+def _lint_math(parts: Sequence[Union["_Prose", "_Fence"]]) -> None:
+    """Fail the compile on undefined KaTeX macros / the `#`-hex footgun in prose
+    math, before any Python runs. Skips code fences (Python / verbatim)."""
+    for part in parts:
+        if isinstance(part, _Fence) or not part.scan:
+            continue
+        for latex, lineno in _iter_math(part.text, part.lineno):
+            problems = lint_latex(latex)
+            if problems:
+                raise ArticleError(lineno, problems[0])
+
+
 # ---------------------------------------------------------------------------
 # Markdown segmentation
 # ---------------------------------------------------------------------------
@@ -412,6 +443,7 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
     must already be loaded); use `run_article` for a sandboxed subprocess run.
     """
     parts = _segment(markdown)
+    _lint_math(parts)
 
     # Document-order events: executables (fences, inline spans) and ref spans.
     executables: list[_Executable] = []

@@ -90,6 +90,49 @@ def test_bindings_scoped_to_store():
 
 
 # ---------------------------------------------------------------------------
+# Slot-op guards — braces are reveal-only (mirrors the browser BRACE_FAMILIES).
+# A bare-brace reveal and a value bind resolve to the same label span and the
+# applier would double-splice it, so pygeomatic rejects the bind at the call
+# site. See tex.py FAMILY_OPS.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("family", ["underbrace", "overbrace"])
+def test_value_bind_into_brace_is_rejected(family):
+    with gm.Store():
+        a = gm.scalar(3, out="a")
+        t = gm.tex("f")
+        with pytest.raises(TexError, match="reveal-only"):
+            getattr(t, family).label.bind(a)
+        with pytest.raises(TexError, match="reveal-only"):
+            getattr(t, family).bind(a)  # whole-family bind too
+
+
+@pytest.mark.parametrize("family", ["underbrace", "overbrace"])
+def test_reveal_on_brace_is_allowed(family):
+    with gm.Store() as s:
+        g = gm.scalar(1, out="g")
+        getattr(gm.tex("f"), family).reveal(g)
+    (rv,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
+    assert rv["slot"] == family
+
+
+def test_value_bind_into_value_family_still_works():
+    with gm.Store() as s:
+        a = gm.scalar(2, out="a")
+        gm.tex("f").frac.denom.bind(a)  # frac is bindable, no error
+    (entry,) = gm.harvest_tex_bindings(s)["f"]["values"]
+    assert entry["slot"] == "frac.denom"
+
+
+def test_register_tex_schema_rejects_unknown_op():
+    from pygeomatic.tex import register_tex_schema
+
+    with pytest.raises(TexError, match="op"):
+        register_tex_schema("myfam", ("x",), ops=("bind", "sparkle"))
+
+
+# ---------------------------------------------------------------------------
 # show / fmt on a value binding
 # ---------------------------------------------------------------------------
 

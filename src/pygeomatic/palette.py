@@ -63,17 +63,19 @@ class ColorPalette(dict):
 def load_colors(store: Optional[Store] = None) -> ColorPalette:
     """Run the `\\load-colors` macro (same behavior as the DSL line: one
     command recorded, the `COLOR-*` Text nodes added to the store) and return
-    the palette nodes. Call once, at the top of a scene (after any `\\clear`).
-    Idempotent: a second call reuses the already-loaded nodes."""
+    the palette nodes. Call at the top of every scene — after a `\\clear` (which
+    wipes the `COLOR-*` nodes) the colors must be reloaded.
+
+    Like the DSL command it mirrors, this emits `\\load-colors` on every call:
+    the mapping is deterministic and carries no hidden idempotency state."""
     fdef = _load_colors_macro()
     ids = color_ids()
     store = store or current_store()
 
-    if not all(cid in store.nodes for cid in ids):
-        token = _current_store.set(store)
-        try:
-            fdef.py_func()
-        finally:
-            _current_store.reset(token)
+    token = _current_store.set(store)
+    try:
+        fdef.py_func()
+    finally:
+        _current_store.reset(token)
 
     return ColorPalette({cid: store.nodes[cid] for cid in ids})

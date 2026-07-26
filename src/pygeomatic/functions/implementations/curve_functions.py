@@ -75,8 +75,11 @@ def clear_trail(trail_id):
     category=CATEGORY,
     is_async=True,
 )
-def plot(x, y):
-    """Record-only: plotting traces the reactive graph in the engine."""
+def plot_reactive(x, y):
+    """Record-only: traces the reactive graph in the engine. `x` and `y` are
+    single Scalar nodes in a reactive relationship (`y = f(x)`); the engine
+    sweeps `x` and traces the curve. NOT matplotlib: do not pass arrays of
+    precomputed samples. Emits `\\plot`."""
     return Plot._new()
 
 
