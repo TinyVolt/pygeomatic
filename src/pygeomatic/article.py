@@ -35,6 +35,8 @@ import subprocess
 import sys
 from contextlib import contextmanager
 from contextvars import ContextVar
+from html import escape
+from inspect import cleandoc
 from dataclasses import dataclass, field
 from typing import Optional, Sequence, Union
 
@@ -97,6 +99,9 @@ class _Group:
 class _Recorder:
     groups: list[_Group] = field(default_factory=list)
     open: Optional[str] = None
+    # Markdown the CURRENT executable has emitted via gm.md(), in call order.
+    # Reset by _execute before each fence; drained into the fence afterwards.
+    md: list[str] = field(default_factory=list)
 
 
 _recorder: ContextVar[Optional[_Recorder]] = ContextVar(
@@ -136,6 +141,96 @@ def group(name: str):
     if end == start:
         raise ArticleError(None, f"group {name!r} recorded no commands")
     rec.groups.append(_Group(name, start, end))
+
+
+def md(text: str) -> None:
+    """Write markdown into the article at the point this block sits.
+
+    A ```pygeomatic block normally contributes only hidden setup commands. This
+    is how it contributes visible prose as well — which is what makes a control
+    reachable, since `f"{r}"` only works inside python:
+
+        r = gm.ui.slider(1, 5, label="radius")
+        gm.md(f"Drag to resize the circle: {r}")
+
+    Calls accumulate in order and land after the block's setup commands.
+    `cleandoc` strips the uniform indentation of a triple-quoted string, so
+    prose written at any indent level reaches markdown flush-left rather than
+    as a code block.
+
+    Deliberately NOT rescanned for `{label}(command)` links: a link has to be
+    executed to produce its DSL, and by the time this text exists all execution
+    has finished. Maths, controls and conditional blocks are all fine.
+    """
+    rec = _recorder.get()
+    if rec is None:
+        raise ArticleError(
+            None, "gm.md() is only usable inside a pygeomatic article block"
+        )
+    if not isinstance(text, str):
+        raise ArticleError(None, f"gm.md() takes a string, got {type(text).__name__}")
+    rec.md.append(cleandoc(text))
+
+
+@contextmanager
+def when(condition):
+    """Show the markdown in this block only while `condition` holds.
+
+    The condition is checked in the READER's browser, against live store nodes,
+    so the prose appears and disappears as they move a control:
+
+        show = gm.ui.checkbox(False, label="Show the proof")
+        with gm.when(show):
+            gm.md("Because $ab=ba$, the map commutes.")
+
+    Only gm.md() output is gated. Commands recorded inside the block go onto
+    the tape as usual — hiding prose must not silently change the scene.
+
+    Blocks nest; an inner block shows only when both conditions hold.
+
+    Do not put command links inside a gated block. Commands are numbered by
+    document position, so hiding one doesn't remove it from the sequence: the
+    reader would be left waiting on a link they cannot see. Prose, maths and
+    controls are all fine.
+    """
+    from .cond import evaluate, node_refs, to_payload
+
+    rec = _recorder.get()
+    if rec is None:
+        raise ArticleError(
+            None, "gm.when() is only usable inside a pygeomatic article block"
+        )
+    payload = to_payload(condition)
+
+    outer = rec.md
+    rec.md = []
+    try:
+        yield
+    finally:
+        inner = [chunk for chunk in rec.md if chunk.strip()]
+        rec.md = outer
+
+    if not inner:
+        raise ArticleError(None, "gm.when() block produced no markdown")
+
+    # Start hidden when the condition is already false, so the block never
+    # flashes on screen before the browser's watcher runs. Values come from the
+    # nodes as they stand right now; an unknown value reads as false.
+    store = current_store()
+    values = {}
+    for node_id in node_refs(payload, set()):
+        node = store.nodes.get(node_id)
+        values[node_id] = getattr(node, "numeric", None) if node else None
+    hidden = "" if evaluate(payload, values) else ' style="display:none"'
+
+    data = json.dumps(payload, separators=(",", ":"), sort_keys=False)
+    body = "\n\n".join(inner)
+    # The blank lines are load-bearing: markdown stops treating a block as raw
+    # HTML at the first blank line, so the prose inside is still formatted
+    # normally (and the raw file still reads correctly on GitHub).
+    rec.md.append(
+        f'<div class="nova-when" data-when=\'{escape(data)}\'{hidden}>\n\n{body}\n\n</div>'
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -370,6 +465,7 @@ class _Executable:
     span: Optional[_Span] = None  # inline only
     start: int = -1  # tape slice [start:end) once executed
     end: int = -1
+    md: str = ""  # markdown this executable emitted via gm.md()
 
 
 def _author_lineno(exc: BaseException, fallback: int) -> int:
@@ -387,7 +483,7 @@ def _execute(executables: list[_Executable], allow: bool) -> tuple[Store, list[_
     """Run the article's Python in one shared store; returns it and the groups."""
     import pygeomatic as gm  # the fully-initialized package, for the namespace
 
-    namespace = {"gm": gm, "group": group}
+    namespace = {"gm": gm, "group": group, "md": md, "when": when}
     rec = _Recorder()
     rec_token = _recorder.set(rec)
     try:
@@ -395,6 +491,7 @@ def _execute(executables: list[_Executable], allow: bool) -> tuple[Store, list[_
             for ex in executables:
                 ex.start = len(store.commands)
                 groups_before = len(rec.groups)
+                rec.md = []
                 # Pad so tracebacks and SyntaxErrors carry article line numbers.
                 padded = "\n" * (ex.lineno - 1) + ex.code
                 try:
@@ -413,10 +510,19 @@ def _execute(executables: list[_Executable], allow: bool) -> tuple[Store, list[_
                         f"{type(err).__name__}: {err}",
                     ) from err
                 ex.end = len(store.commands)
+                ex.md = "\n\n".join(chunk for chunk in rec.md if chunk.strip())
                 if ex.kind == "inline":
                     if len(rec.groups) != groups_before:
                         raise ArticleError(
                             ex.lineno, "group() is not allowed in an inline span"
+                        )
+                    if ex.md:
+                        # An inline span is replaced by its commands mid-
+                        # sentence; there is nowhere sensible to put a block of
+                        # prose, so this is a mistake rather than a layout
+                        # choice. Same reasoning as group() above.
+                        raise ArticleError(
+                            ex.lineno, "gm.md() is not allowed in an inline span"
                         )
                     if ex.end == ex.start:
                         raise ArticleError(
@@ -554,9 +660,15 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
     nth_fence = 0
     for part in parts:
         if isinstance(part, _Fence):
-            lines = fence_lines[fence_order[nth_fence]]
+            ex_idx = fence_order[nth_fence]
+            lines = fence_lines[ex_idx]
             nth_fence += 1
             out.append("".join(f"{{}}({line})\n" for line in lines))
+            # Prose the block emitted via gm.md() follows its setup commands,
+            # blank-line separated so markdown sees it as its own block.
+            emitted = executables[ex_idx].md
+            if emitted:
+                out.append(f"\n{emitted}\n\n")
             continue
         text = part.text
         for span, new in sorted(

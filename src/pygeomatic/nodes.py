@@ -195,6 +195,37 @@ class GNode(BaseModel):
     def __repr__(self) -> str:  # concise, id-first
         return f"{self.type}(id={self.id!r})"
 
+    def __format__(self, spec: str) -> str:
+        """Interpolating a node into a string yields its id — except when the
+        node carries a gm.ui control, in which case it yields that control's
+        HTML. This is the whole mechanism behind
+
+            r = gm.ui.slider(1, 5)
+            gm.md(f"Drag to resize: {r}")
+
+        Kept on the base node (rather than on a widget subclass) so a widget
+        stays an ordinary Scalar/Bool/Text and every function that accepts one
+        keeps working untouched. Imports are local because `store` imports this
+        module.
+        """
+        del spec
+        if not self.id:
+            return repr(self)
+        try:
+            from .store import current_store
+
+            widget = current_store().ui_widgets.get(self.id)
+        except Exception:
+            # No active store (a bare node built outside `with Store()`), or a
+            # store without the channel: fall back to the plain id rather than
+            # breaking an f-string.
+            return self.id
+        if widget is None:
+            return self.id
+        from .ui import render_widget_html
+
+        return render_widget_html(widget)
+
 
 # ---------------------------------------------------------------------------
 # Leaf value nodes

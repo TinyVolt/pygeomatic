@@ -250,6 +250,12 @@ class Store:
         # by formula id (the `%id:` line inside a `$$…$$` block) →
         # {"values": [...], "highlights": [...]}.
         self.tex_bindings: dict[str, dict] = {}
+        # gm.ui widgets: reader-facing controls (slider, checkbox, ...) recorded
+        # on a channel SEPARATE from the command tape, exactly like tex_bindings.
+        # A widget's node IS recorded (`r = \scalar 3`); this map only remembers
+        # which control drives it, keyed by node id → the widget spec dict.
+        # Read by GNode.__format__ to turn `f"{r}"` into the control's HTML.
+        self.ui_widgets: dict[str, dict] = {}
         self._token = None
         # Every canvas starts with the engine's default nodes (`p0`, `T`/`F`,
         # `learning-rate`, ...); seed them so a scene can reference them without
