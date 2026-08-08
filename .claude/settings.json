@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(uv run pytest*)",
+      "Bash(uv run python scripts/build_to_dsl.py *)",
+      "Bash(uv sync)",
+      "Bash(uv pip list*)",
+      "Bash(npx tsc*)",
+      "Bash(npx vitest*)",
+      "Bash(npm run gen:registry)",
+      "Bash(npm test)",
+      "Bash(wc *)",
+      "Bash(awk *)",
+      "Bash(curl -s *)"
+    ]
+  }
+}

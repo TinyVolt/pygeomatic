@@ -85,8 +85,16 @@ Read the commands top to bottom and classify each:
   ends each group and carries the visible label.
 
 Partition the ordered list into **groups**, each a run ending in its single
-completer. Preserve the given order — you draw boundaries, never move lines. Two
-checks that have burned people:
+completer. Preserve the given order — you draw boundaries, never move lines.
+
+**Draw the boundaries where the prose changes subject, not where the commands
+change kind.** If the text walks l₁, then l₂, then l₃, the beats are
+(l₁ bar + l₁ labels), (l₂ bar + l₂ labels), (l₃ bar + l₃ labels) — never
+(all bars), (all labels). A group named for a command type is the warning sign:
+its click reveals objects three sentences of prose have not introduced yet. Only
+what the label's own clause is about may appear on that click.
+
+Two more checks that have burned people:
 
 - **Hide construction scaffolding** so the first click isn't a data dump (guide
   circles, the points that only define a line). Insert `gm.hide(...)` and flag it;
@@ -158,6 +166,22 @@ for each `ref` in order, confirm the click reveals exactly its own beat, nothing
 bleeds from the neighbor, and the first click does not dump scaffolding. A clean
 compile proves ordering is legal, not that the boundaries land where the prose
 promises — do both.
+
+**Then audit every link against its group's commands.** Go ref by ref and read
+the group body, not its name — a name-level check cannot see what is inside.
+For each, write the label text and what the click actually draws, and ask:
+
+- Does the click draw anything the label's clause does not mention? ("the next
+  three lengths" that reveals all six.)
+- Does it draw less than the clause promises?
+- Does it reveal an object the prose introduces only later? (A region defined in
+  item ii) must not appear on a span in the sentence above it.)
+- Does a caption or label text state a result the prose has not reached yet?
+
+Any "yes" is a defect: **redraw the group boundary** (or move the span to the
+clause that matches). Renaming a group or swapping which span points at it does
+not fix a mismatch that lives inside the group. Report the audit table with the
+result.
 
 ### Phase 6 — apply
 
