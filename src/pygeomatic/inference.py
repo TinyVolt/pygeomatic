@@ -89,6 +89,26 @@ _DUNDER_FRAME_NAMES = frozenset(
     }
 )
 
+# gm.ui widget constructors: each records its node by calling an ordinary
+# geomatic function, so inference must hop their frame to reach the author's
+# assignment (`r = gm.ui.slider(1, 5)` → node id `r`). Kept as an explicit set
+# rather than "any pygeomatic.ui frame" so an unrelated helper in that module
+# can never silently steal a name.
+_UI_FRAME_NAMES = frozenset(
+    {
+        "slider",
+        "checkbox",
+        "dropdown",
+        "radio",
+        "number",
+        "text",
+        # Shared helper behind dropdown/radio: one MORE frame between the
+        # author and the recording call, so it has to be hopped too or those
+        # two would fall back to an auto id while the others named correctly.
+        "_choice",
+    }
+)
+
 # A marker is the offset of the instruction that produced the value; opaque
 # stack entries are None; BUILD_TUPLE groups become lists of entries.
 _Entry = Union[int, None, list]
@@ -205,15 +225,26 @@ def _assignment_targets(code: CodeType) -> tuple[list[int], dict[int, list[str]]
     return [ins.offset for ins in instructions], targets
 
 
+def _is_hoppable(frame: FrameType) -> bool:
+    """True for a pygeomatic-internal frame that stands between the user's
+    expression and the recording wrapper, so inference should look past it."""
+    module = frame.f_globals.get("__name__") or ""
+    name = frame.f_code.co_name
+    if module == "pygeomatic.nodes" and name in _DUNDER_FRAME_NAMES:
+        return True
+    # gm.ui widget constructors call gm.scalar()/gm.text()/... on the author's
+    # behalf, so the recording call happens one frame down inside pygeomatic.ui
+    # — the same situation as an operator dunder. Without this hop
+    # `r = gm.ui.slider(1, 5)` would fall back to an auto id (`num0`) and the
+    # widget could not address its own node.
+    return module == "pygeomatic.ui" and name in _UI_FRAME_NAMES
+
+
 def _hop_dunder_frames(frame: FrameType) -> Optional[FrameType]:
-    """Skip GNode operator-dunder frames so `c = a + b` reads the user frame."""
+    """Skip pygeomatic-internal frames so `c = a + b` and `r = gm.ui.slider(...)`
+    both read the user frame."""
     hops = 0
-    while (
-        frame is not None
-        and hops < 4
-        and (frame.f_globals.get("__name__") or "") == "pygeomatic.nodes"
-        and frame.f_code.co_name in _DUNDER_FRAME_NAMES
-    ):
+    while frame is not None and hops < 4 and _is_hoppable(frame):
         frame = frame.f_back
         hops += 1
     return frame

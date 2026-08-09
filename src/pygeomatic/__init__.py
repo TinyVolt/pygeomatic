@@ -22,8 +22,12 @@ from .article import (  # noqa: F401
     ArticleResult,
     article_mode,
     compile_article,
+    md,
     run_article,
+    when,
 )
+from . import cond  # noqa: F401  — gm.cond.ge(k, 2), gm.cond.all_(...), ...
+from .cond import Cond, CondError  # noqa: F401
 from .coercions import allow_coercions, coercions_enabled  # noqa: F401
 from .emit import emit, render_command, render_token  # noqa: F401
 from .extensions import (  # noqa: F401
@@ -118,6 +122,8 @@ from .tex import (  # noqa: F401
     rows,
     tex,
 )
+from . import ui  # noqa: F401  — gm.ui.slider(...), gm.ui.checkbox(...), ...
+from .ui import UIError, render_widget_html  # noqa: F401
 
 
 def __getattr__(name: str) -> GNode:
