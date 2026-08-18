@@ -46,7 +46,7 @@ from .coercions import allow_coercions
 from .emit import emit, render_command
 from .latex_lint import lint_latex
 from .parse import DslParseError, parse_dsl
-from .store import Store, _article_replay, _auto_create_enabled, current_store
+from .store import Store, _auto_create_enabled, current_store
 from .tex import harvest_tex_bindings
 
 # texatlas bindings (gm.tex) are declarative page config, not DSL: the compiler
@@ -73,19 +73,8 @@ class ArticleError(ValueError):
 
 
 # ---------------------------------------------------------------------------
-# Article mode + group recording
+# Group recording
 # ---------------------------------------------------------------------------
-
-
-@contextmanager
-def article_mode():
-    """Run pygeomatic calls with the engine's article semantics: an explicit or
-    inferred output id may reassign an existing node (last-write-wins)."""
-    token = _article_replay.set(True)
-    try:
-        yield
-    finally:
-        _article_replay.reset(token)
 
 
 @dataclass
@@ -487,7 +476,7 @@ def _execute(executables: list[_Executable], allow: bool) -> tuple[Store, list[_
     rec = _Recorder()
     rec_token = _recorder.set(rec)
     try:
-        with Store() as store, article_mode(), allow_coercions(allow):
+        with Store() as store, allow_coercions(allow):
             for ex in executables:
                 ex.start = len(store.commands)
                 groups_before = len(rec.groups)
@@ -688,7 +677,7 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
         if isinstance(part, _Prose) and part.scan
         for s in _scan_spans(part.text)
     ]
-    with Store() as check, article_mode():
+    with Store() as check:
         # Strict replay: auto-creating a missing Point/Scalar/Text here would
         # mask a define-before-use violation (the reader's engine would bind
         # the consumer to a random-valued auto-created node, not the article's

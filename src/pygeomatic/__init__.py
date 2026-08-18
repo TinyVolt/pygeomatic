@@ -20,7 +20,6 @@ Example:
 from .article import (  # noqa: F401
     ArticleError,
     ArticleResult,
-    article_mode,
     compile_article,
     md,
     run_article,

@@ -21,10 +21,10 @@ when the full data flow from the producing instruction to its STORE was
 understood. Anything unclear — attribute/subscript
 targets, expression statements — falls back to the auto-generated id, as does
 an id that is invalid or engine-auto-shaped (`p1`, `num3`, ...). A taken
-inferred name is no longer filtered out: it flows into `Store.allocate_id`,
-which raises in plain-authoring mode (the duplicate-id guard that catches
-loop reuse) and reassigns last-write-wins in article/macro replay — so the
-inferred-name path and the explicit-`out=` path share one guard. Python
+inferred name is not one of those: it flows into `Store.allocate_id` and
+reassigns the node last-write-wins, exactly as an explicit `out=` does (the
+engine's saveNode). So a name reused in a loop overwrites rather than
+accumulating — distinct nodes need distinct ids (`out=f"p-{i}"`). Python
 underscores translate to DSL dashes (`fwd_traj` → `fwd-traj`). An explicit
 `out=` always wins; calls
 originating inside pygeomatic itself (parse replay, macro bodies) are never

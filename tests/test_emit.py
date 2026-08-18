@@ -1,7 +1,5 @@
 """Tape → DSL emission round-trips."""
 
-import pytest
-
 import pygeomatic as gm
 
 
@@ -77,8 +75,11 @@ def test_variadic_and_imperative_forms():
     assert lines[4] == "\\clear"
 
 
-def test_duplicate_out_id_rejected():
-    with gm.Store():
+def test_duplicate_out_id_reassigns():
+    # The engine's saveNode is last-write-wins: both lines are emitted and the
+    # id resolves to the second node.
+    with gm.Store() as s:
         gm.point(0, 0, out="a")
-        with pytest.raises(ValueError, match="already exists"):
-            gm.point(1, 1, out="a")
+        second = gm.point(1, 1, out="a")
+    assert s.nodes["a"] is second
+    assert gm.emit(s).splitlines() == ["a = \\point 0 0", "a = \\point 1 1"]
