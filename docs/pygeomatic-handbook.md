@@ -308,7 +308,7 @@ live id→hex map):
 | AMBER | `#F59E0B` | INDIGO | `#818CF8` | DARKGRAY | `#333333` |
 | YELLOW | `#f0e080` | VIOLET | `#A78BFA` | BLACK | `#000000` |
 | LIME | `#84CC16` | PURPLE | `#a988f5` | GRAY-LIGHT | `#d1d5db` |
-| GREEN | `#10B981` | PINK | `#EC4899` | GRAY-MID | `#6b7280` |
+| GREEN | `#10B981` | PINK | `#F472B6` | GRAY-MID | `#6b7280` |
 | EMERALD | `#34D399` | FUCHSIA | `#E879F9` | GRAY-DARK | `#374151` |
 | TEAL | `#14B8A6` | TEAL-LIGHT | `#5eead4` | RED-LIGHT | `#fca5a5` |
 | VOLT | `#41dbc9` | TEAL-MID | `#14b8a6` | RED-MID | `#ef4444` |
