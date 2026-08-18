@@ -135,16 +135,14 @@ That same command prints the body. Take its stdout lines verbatim as `commands`
 
 ### Phase 3 — add what Python cannot express
 
-Two things belong in the body but cannot come out of a single `build(gm)`:
+Reassignment needs nothing special: `n = gm.scalar(15)` a second time overwrites
+`n` and emits both lines, same as the engine. One thing still cannot come out of
+a single `build(gm)`:
 
-- **Reassignment lines.** `n = gm.scalar(15)` a second time raises
-  `node id 'n' already exists` in Python. Append those lines to the DSL list by
-  hand after conversion.
 - **Engine auto-id references** where you want the idiom (`p0`, `p1`) rather than
-  a named id.
-
-Both are legal on macro replay, which is why Phase 4 is invocation and not
-`parse_dsl` — **`parse_dsl` rejects reassignment and will lie to you here.**
+  a named id. Append those lines to the DSL list by hand after conversion; they
+  are legal on macro replay, which is why Phase 4 is invocation and not
+  `parse_dsl`.
 
 ### Phase 4 — verify by loading and invoking
 

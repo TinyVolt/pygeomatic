@@ -70,13 +70,18 @@ Every node has an id. There are three ways to set it, in order of precedence:
    works: `a, b, c = gm.scalar(1), gm.scalar(2), gm.scalar(3)` names all three.
    Name inference reads the caller's bytecode, so it behaves identically in
    files, the REPL, `python -c`, notebooks, and `exec`.
-3. **Auto** — no target, or anything ambiguous/unsafe (attribute targets,
-   reusing a name in a loop, an already-taken id, an engine-auto-name shape) →
-   a dashed auto-id (`p-0`, `num-1`). Dashed ids can never collide with engine
-   ids.
+3. **Auto** — no target, or anything ambiguous/unsafe (attribute targets, an
+   engine-auto-name shape) → a dashed auto-id (`p-0`, `num-1`). Dashed ids can
+   never collide with engine ids.
 
 Explicit ids that violate the grammar raise. Prefer **descriptive names** — they
 become descriptive DSL ids for free.
+
+**Reusing an id overwrites it**, whether it came from `out=` or from the variable
+name — the engine's `saveNode` is last-write-wins, and pygeomatic mirrors that.
+Both lines are emitted, and the id resolves to the second node from that point
+on. So a name reused in a loop leaves one node, not many; distinct nodes need
+distinct ids (`out=f"point-{i}"`).
 
 ---
 
@@ -345,7 +350,7 @@ code becomes hidden `{}(cmd)` setup spans where the fence sat. A
 - `{label}(ref:name)` — expands a group: every command but the last becomes a
   hidden `{}()` span, the last becomes the visible labeled span, so a click
   always lands on a fully set-up scene.
-- `{label}(python statement)` — inline one-off escape hatch. Article mode is
+- `{label}(python statement)` — inline one-off escape hatch. Assignment is
   **last-write-wins**, so `s = gm.scalar(1)` reassigns like the DSL line it
   becomes.
 
