@@ -153,7 +153,11 @@ _register_builtin_schema()
 # Wire helpers
 # ---------------------------------------------------------------------------
 
-_FMT_RE = re.compile(r"\.\d+f\Z|d\Z")
+# Number formats the browser's `formatValue` implements: `.Nf` (fixed), `.N%`
+# (percent, value * 100 with a trailing sign), `d` (round to int). Keep in sync
+# with format.ts / CONTRACT.md — a format accepted here but unknown there falls
+# through to a raw `String(value)`.
+_FMT_RE = re.compile(r"\.\d+[f%]\Z|d\Z")
 
 
 def _node_id(value: Union[GNode, str], *, what: str) -> str:
@@ -260,6 +264,29 @@ def _resolve_color(color: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _no_truth_value(self) -> bool:
+    """Refuse to collapse an expression builder to a bool.
+
+    An axis or a selector describes a rule to evaluate per cell in the browser;
+    it has no truth value here. Python only ever asks for one implicitly, and
+    every route to that question silently discards part of the rule:
+
+        1 < rows < 3        # chained: `(1 < rows) and (rows < 3)`, Python asks
+                            # the first half for its truth value and drops it
+        (rows == r) and b   # `and`/`or`/`not` cannot be overloaded at all
+
+    Left truthy (the default for any object) these evaluate to just their last
+    term and record a selector the author never wrote. numpy raises in the same
+    spot for the same reason; so do we.
+    """
+    raise TexError(
+        "a selector has no truth value, so Python cannot chain or combine it "
+        "with and/or/not. Chained comparisons (`1 < rows < 3`) and `and`/`or` "
+        "silently drop terms; write the parts explicitly and combine them with "
+        "`&` (both) or `|` (either): (rows >= 1) & (rows < 3)"
+    )
+
+
 class AxisExpr:
     """A per-cell axis value: `row`, `col`, or arithmetic over them. Serializes
     to the `AxisExpr` wire shape."""
@@ -315,6 +342,8 @@ class AxisExpr:
     # `__eq__` makes instances non-hashable by Python's rules; that is correct
     # here (an axis is an expression builder, never a dict key or set member).
     __hash__ = None  # type: ignore[assignment]
+
+    __bool__ = _no_truth_value  # see `_no_truth_value`
 
     def _json(self) -> dict:  # pragma: no cover - overridden
         raise NotImplementedError
@@ -423,6 +452,8 @@ class Selector:
     __and__ = and_
     __or__ = or_
 
+    __bool__ = _no_truth_value  # see `_no_truth_value`
+
     def _json(self) -> dict:
         return self._json_
 
@@ -494,13 +525,15 @@ class _Slot:
         """Link this slot to a store node. `show="value"` (default) substitutes
         the node's value into the slot; `show="symbol"` registers the link
         without changing the rendered glyph. `fmt` is a number format
-        (`".2f"`, `"d"`, or omit to trim to <=4 dp)."""
+        (`".2f"` fixed, `".1%"` percent, `"d"` round to int, or omit to trim to
+        <=4 dp)."""
         _require_op(self._address, BIND)
         if show not in ("value", "symbol"):
             raise TexError(f"show must be 'value' or 'symbol', got {show!r}")
         if fmt is not None and not _FMT_RE.fullmatch(fmt):
             raise TexError(
-                f"invalid fmt {fmt!r}: use '.Nf' (fixed), 'd' (round to int), or omit"
+                f"invalid fmt {fmt!r}: use '.Nf' (fixed), '.N%' (percent), "
+                "'d' (round to int), or omit"
             )
         node_id = _node_id(node, what="bound")
         entry: dict = {"slot": self._address, "node": node_id}
