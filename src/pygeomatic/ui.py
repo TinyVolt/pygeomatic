@@ -30,6 +30,10 @@ mirrors — see the plan notes for the source references):
 
 The escaping in `_attr` is load-bearing and copied deliberately; see its
 docstring.
+
+`gm.ui.onclick` (onclick.py) also lives in this namespace but is a different
+mechanism: a control drives a node's VALUE, a handler runs COMMANDS when the
+reader clicks the node on the canvas.
 """
 
 from __future__ import annotations
@@ -39,6 +43,7 @@ from html import escape
 from typing import Optional, Sequence, Union
 
 from .nodes import GNode
+from .onclick import OnClickError, onclick, open_handler  # noqa: F401 — gm.ui.onclick
 from .store import IDENTIFIER_RE, current_store
 
 
@@ -112,6 +117,13 @@ def _register(node: GNode, kind: str, options: dict) -> None:
     node_id = node.id
     if not node_id:
         raise UIError(f"gm.ui.{kind} produced a node with no id")
+    handler = open_handler()
+    if handler is not None:
+        raise UIError(
+            f"gm.ui.{kind} cannot be created inside the gm.ui.onclick block for "
+            f"{handler!r}: the command behind a control must exist before the reader "
+            "touches anything, and a handler's commands only run once they click."
+        )
     existing = store.ui_widgets.get(node_id)
     if existing is not None:
         raise UIError(

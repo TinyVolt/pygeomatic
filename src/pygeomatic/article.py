@@ -16,6 +16,12 @@ result is exactly the `{label}(command)` article format used in markdowns. The s
 braces) and `$...$` / `$$...$$` math regions are skipped entirely, so a `}(`
 adjacency inside math (e.g. `$\\tan^{-1}(y/x)$`) never becomes a span.
 
+`with gm.ui.onclick(node):` blocks are the exception to all of that: their
+commands leave the tape and are snapshotted into the trailing `onclick:v1`
+manifest instead, to run when the reader clicks the node. A fence whose only
+content is such a block therefore contributes no spans at all — and wrapping it
+in `group()` raises, since the group would record nothing.
+
 The compiled document is re-read span-by-span at read time, so its command
 sequence must be executable in DOCUMENT order. A round-trip gate replays the
 compiled spans through `parse_dsl` and compares the re-emitted lines, catching
@@ -45,21 +51,23 @@ import json
 from .coercions import allow_coercions
 from .emit import emit, render_command
 from .latex_lint import lint_latex
+from .onclick import OnClickError, harvest_click_handlers, open_handler
 from .parse import DslParseError, parse_dsl
 from .store import Store, _auto_create_enabled, current_store
 from .tex import harvest_tex_bindings
 
-# texatlas bindings (gm.tex) are declarative page config, not DSL: the compiler
-# harvests them from the session and snapshots them into the compiled article as
-# an HTML comment (invisible to any markdown renderer, easily extracted by the
-# reader). Not a span, not a fence — the round-trip gate never sees it.
-_TEX_MANIFEST_OPEN = "<!-- texatlas:v1"
-_TEX_MANIFEST_CLOSE = "-->"
+# texatlas bindings (gm.tex) and click handlers (gm.ui.onclick) are declarative
+# page config, not DSL: the compiler harvests them from the session and
+# snapshots them into the compiled article as HTML comments (invisible to any
+# markdown renderer, easily extracted by the reader). Not spans, not fences —
+# the round-trip gate never sees them. The reader strips BOTH from the tail, so
+# their order here is not load-bearing.
+_MANIFEST_CLOSE = "-->"
 
 
-def _append_tex_manifest(compiled: str, manifest: dict) -> str:
+def _append_manifest(compiled: str, tag: str, manifest: dict) -> str:
     body = json.dumps(manifest, separators=(",", ":"), sort_keys=False)
-    block = f"{_TEX_MANIFEST_OPEN}\n{body}\n{_TEX_MANIFEST_CLOSE}\n"
+    block = f"<!-- {tag}\n{body}\n{_MANIFEST_CLOSE}\n"
     sep = "" if compiled.endswith("\n") or not compiled else "\n"
     return f"{compiled}{sep}\n{block}"
 
@@ -117,6 +125,14 @@ def group(name: str):
         )
     if rec.open is not None:
         raise ArticleError(None, f"group {name!r} opened inside group {rec.open!r}")
+    handler = open_handler()
+    if handler is not None:
+        raise ArticleError(
+            None,
+            f"group {name!r} opened inside the gm.ui.onclick block for {handler!r}: a "
+            "group is a run of commands prose can reveal, and a handler's commands "
+            "leave the tape entirely — the reader clicks the node instead.",
+        )
     if any(g.name == name for g in rec.groups):
         raise ArticleError(None, f"duplicate group name {name!r}")
     store = current_store()
@@ -158,6 +174,15 @@ def md(text: str) -> None:
         )
     if not isinstance(text, str):
         raise ArticleError(None, f"gm.md() takes a string, got {type(text).__name__}")
+    handler = open_handler()
+    if handler is not None:
+        raise ArticleError(
+            None,
+            f"gm.md() called inside the gm.ui.onclick block for {handler!r}: prose is "
+            "written once, when the article compiles, so it cannot be produced by a "
+            "click. Write it outside and gate it with gm.when(...) on a node the "
+            "handler sets.",
+        )
     rec.md.append(cleandoc(text))
 
 
@@ -708,13 +733,23 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
             f"{len(replayed)} after replay",
         )
 
-    # -- texatlas snapshot ---------------------------------------------------
-    # Harvest the session's gm.tex bindings (recorded off-tape) and embed them,
-    # after the round-trip gate so the DSL replay is never disturbed. Articles
-    # with no bindings are byte-for-byte unchanged.
-    manifest = harvest_tex_bindings(store)
-    if manifest:
-        compiled = _append_tex_manifest(compiled, manifest)
+    # -- off-tape snapshots --------------------------------------------------
+    # Harvest the session's gm.tex bindings and gm.ui.onclick handlers (both
+    # recorded off-tape) and embed them, after the round-trip gate so the DSL
+    # replay is never disturbed. Articles with neither are byte-for-byte
+    # unchanged. A handler's commands are deliberately absent from the gate:
+    # they run on a click, not in document order.
+    tex_manifest = harvest_tex_bindings(store)
+    if tex_manifest:
+        compiled = _append_manifest(compiled, "texatlas:v1", tex_manifest)
+    try:
+        click_manifest = harvest_click_handlers(store)
+    except OnClickError as exc:
+        # Surface it on the article's own error channel, so the CLI and the
+        # Nova worker report it like any other compilation failure.
+        raise ArticleError(None, str(exc)) from exc
+    if click_manifest:
+        compiled = _append_manifest(compiled, "onclick:v1", click_manifest)
     return compiled
 
 

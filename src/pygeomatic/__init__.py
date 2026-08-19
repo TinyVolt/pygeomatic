@@ -121,7 +121,8 @@ from .tex import (  # noqa: F401
     rows,
     tex,
 )
-from . import ui  # noqa: F401  — gm.ui.slider(...), gm.ui.checkbox(...), ...
+from .onclick import OnClickError, harvest_click_handlers  # noqa: F401
+from . import ui  # noqa: F401  — gm.ui.slider(...), gm.ui.onclick(node), ...
 from .ui import UIError, render_widget_html  # noqa: F401
 
 
