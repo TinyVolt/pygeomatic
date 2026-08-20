@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 import pygeomatic as gm
-from pygeomatic import ArticleError, article_mode, compile_article, run_article
+from pygeomatic import ArticleError, compile_article, run_article
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -19,26 +19,19 @@ def fence(code: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# article_mode / gm.node
+# reassignment / gm.node
 # ---------------------------------------------------------------------------
 
 
-def test_article_mode_allows_explicit_reassignment():
-    with gm.Store() as s, article_mode():
+def test_explicit_reassignment():
+    with gm.Store() as s:
         gm.scalar(1, out="s1")
         gm.scalar(0.5, out="s1")
     assert gm.emit(s).splitlines() == ["s1 = \\scalar 1", "s1 = \\scalar 0.5"]
 
 
-def test_explicit_reassignment_still_rejected_outside_article_mode():
-    with gm.Store():
-        gm.scalar(1, out="s1")
-        with pytest.raises(ValueError, match="already exists"):
-            gm.scalar(0.5, out="s1")
-
-
-def test_article_mode_allows_inferred_reassignment():
-    with gm.Store() as s, article_mode():
+def test_inferred_reassignment():
+    with gm.Store() as s:
         exec("s1 = gm.scalar(1)\ns1 = gm.scalar(2)", {"gm": gm})
     assert gm.emit(s).splitlines() == ["s1 = \\scalar 1", "s1 = \\scalar 2"]
 

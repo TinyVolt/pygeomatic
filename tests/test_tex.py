@@ -174,6 +174,25 @@ def test_invalid_fmt_rejected():
             gm.tex("f").int.upper.bind(a, fmt="%.2f")
 
 
+@pytest.mark.parametrize("fmt", [".0%", ".1%", ".2%"])
+def test_fmt_percent_allowed(fmt):
+    """The browser's formatValue implements `.N%`; the recorder used to reject
+    it, so the format was documented in neither place and reachable from
+    neither. Keep the two sides agreeing."""
+    with gm.Store() as s:
+        a = gm.scalar(0.5, out="a")
+        gm.tex("f").int.upper.bind(a, fmt=fmt)
+    assert gm.harvest_tex_bindings(s)["f"]["values"][0]["fmt"] == fmt
+
+
+@pytest.mark.parametrize("fmt", ["%", ".2", ".f", "f", "2f", ".2ff", ".2%%", "x"])
+def test_still_rejects_formats_the_runtime_cannot_read(fmt):
+    with gm.Store():
+        a = gm.scalar(1, out="a")
+        with pytest.raises(TexError, match="invalid fmt"):
+            gm.tex("f").int.upper.bind(a, fmt=fmt)
+
+
 # ---------------------------------------------------------------------------
 # Slot / family addressing
 # ---------------------------------------------------------------------------
@@ -856,3 +875,49 @@ def test_compile_article_without_bindings_has_no_manifest():
     )
     out = gm.compile_article(md)
     assert "texatlas" not in out
+
+
+# ---------------------------------------------------------------------------
+# Expression builders have no truth value
+# ---------------------------------------------------------------------------
+
+
+def test_chained_comparison_raises_instead_of_dropping_a_term():
+    """`1 < rows < 3` is `(1 < rows) and (rows < 3)`; Python asks the first half
+    for its truth value. Left truthy it was silently discarded and the recorded
+    selector was just `rows < 3`, painting row 0 the author had excluded."""
+    with gm.Store():
+        with pytest.raises(TexError, match="no truth value"):
+            1 < gm.rows < 3
+
+
+def test_and_or_not_on_a_selector_raise():
+    with gm.Store():
+        b = gm.bool_(False, out="b")
+        with pytest.raises(TexError, match="no truth value"):
+            (gm.rows == 1) and (gm.cols == 2)
+        with pytest.raises(TexError, match="no truth value"):
+            (gm.rows == 1) or (gm.cols == 2)
+        with pytest.raises(TexError, match="no truth value"):
+            not (gm.rows == 1)
+        with pytest.raises(TexError, match="no truth value"):
+            bool(gm.tex("t")[1:, :])  # a region is a selector too
+        assert b.id == "b"
+
+
+def test_bool_of_a_bare_axis_raises():
+    with gm.Store():
+        with pytest.raises(TexError, match="no truth value"):
+            bool(gm.rows)
+        with pytest.raises(TexError, match="no truth value"):
+            bool(gm.cols - gm.rows)
+
+
+def test_the_explicit_form_still_works():
+    with gm.Store() as s:
+        gm.tex("m").highlight((gm.rows >= 1) & (gm.rows < 3), color="#f472b6")
+    assert gm.harvest_tex_bindings(s)["m"]["highlights"][0]["selector"] == {
+        "op": "and",
+        "a": {"op": "ge", "axis": {"axis": "row"}, "value": {"const": 1}},
+        "b": {"op": "lt", "axis": {"axis": "row"}, "value": {"const": 3}},
+    }

@@ -154,15 +154,6 @@ _auto_create_enabled: ContextVar[bool] = ContextVar(
     "pygeomatic_auto_create", default=True
 )
 
-# Set while an article's pygeomatic code runs (article.py). Articles are read
-# back by the engine span-by-span, where reassigning an id is a core idiom
-# (`{reset to 1}(s1 = \scalar 1)`, a matrix rebound per bullet), so an explicit
-# or inferred output id may overwrite an existing node — the engine's saveNode
-# is last-write-wins. Everything else (dashed auto ids, engine-auto-shape
-# rejection, tape recording) stays authoring-strict.
-_article_replay: ContextVar[bool] = ContextVar("pygeomatic_article_replay", default=False)
-
-
 def validate_identifier(name: str) -> str:
     if not IDENTIFIER_RE.match(name):
         hint = " (underscores are not allowed in geomatic ids; use dashes)" if "_" in name else ""
@@ -256,6 +247,17 @@ class Store:
         # which control drives it, keyed by node id → the widget spec dict.
         # Read by GNode.__format__ to turn `f"{r}"` into the control's HTML.
         self.ui_widgets: dict[str, dict] = {}
+        # gm.ui.onclick handlers: commands the reader runs by clicking a node,
+        # keyed by node id → {"commands": [dsl line, ...]}. Unlike the two
+        # channels above these ARE tape commands — the block records them
+        # normally and then MOVES them here, because a handler is the one thing
+        # that must not run in document order. Last write wins: opening onclick
+        # again for the same node replaces its handler.
+        self.click_handlers: dict[str, dict] = {}
+        # Ids defined inside some handler. The main tape may not consume one
+        # (onclick._check_no_dangling_refs); at read time the engine would
+        # auto-create a random-valued node in its place.
+        self.handler_output_ids: set[str] = set()
         self._token = None
         # Every canvas starts with the engine's default nodes (`p0`, `T`/`F`,
         # `learning-rate`, ...); seed them so a scene can reference them without
@@ -267,18 +269,9 @@ class Store:
     def allocate_id(self, node_type: str, out: Optional[str]) -> str:
         if out is not None:
             validate_identifier(out)
-            # A user command may reassign a system default (e.g. the fermat macro's
-            # `learning-rate = \scalar 0.5`); the engine's saveNode is last-write-wins.
-            # Any OTHER duplicate is an authoring mistake and stays rejected —
-            # except inside a macro body or an article, which run with full
-            # engine semantics.
-            if (
-                out in self.nodes
-                and out not in SYSTEM_NODE_IDS
-                and not _macro_replay.get()
-                and not _article_replay.get()
-            ):
-                raise ValueError(f"node id {out!r} already exists in this store")
+            # Reassigning an existing id overwrites it: the engine's saveNode is
+            # last-write-wins, so `x = \point 3 4` twice is legal geomatic and
+            # means the second point. pygeomatic mirrors that everywhere.
             self.names.reserve(out)
             return out
         if _macro_replay.get():

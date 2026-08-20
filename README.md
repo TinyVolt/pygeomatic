@@ -124,7 +124,7 @@ Or reset it inline: {set scale to 1}(scale = gm.scalar(1)).
   `{}()` span before the visible one — a click always lands on a fully set-up
   scene.
 - **Inline spans** (`{label}(python statement)`) are the escape hatch for
-  one-offs; article mode is last-write-wins, so `s1 = gm.scalar(1)` reassigns
+  one-offs; assignment is last-write-wins, so `s1 = gm.scalar(1)` reassigns
   like the DSL line it becomes.
 - **Round-trip gate**: the compiled document is replayed with `parse_dsl` in
   document order; broken ordering or invalid DSL fails the compile, not the

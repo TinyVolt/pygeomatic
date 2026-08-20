@@ -3,15 +3,11 @@
 `p = gm.point(3, 4)` must behave like `p = gm.point(3, 4, out="p")`. Ambiguous
 or invalid targets (attribute/subscript targets, engine-auto-shaped or
 grammar-invalid names) still fall back to the auto-generated id. A *taken* id is
-not one of those: a reused inferred name flows into the same duplicate-id guard
-as an explicit `out=` — it raises in plain-authoring mode and reassigns
-last-write-wins in article/macro replay.
+not one of those: a reused inferred name reassigns the node, exactly as an
+explicit `out=` does — the engine's saveNode is last-write-wins.
 """
 
-import pytest
-
 import pygeomatic as gm
-from pygeomatic.store import _article_replay
 
 
 def test_simple_assignment_infers_id():
@@ -75,32 +71,19 @@ def test_annotated_assignment_is_inferred():
     assert origin.id == "origin"
 
 
-def test_loop_reuse_raises_in_plain_store():
-    # A reused inferred name in a loop flows into allocate_id, which raises in
-    # plain-authoring mode (the duplicate-id guard) — same as an explicit out=.
-    # Distinct nodes in a loop require distinct ids (out=f"p-{i}").
-    with gm.Store():
-        p = gm.point(0, 0)  # claims "p"
-        with pytest.raises(ValueError, match="already exists"):
-            p = gm.point(1, 0)  # inferred "p" is taken
-
-
-def test_loop_reuse_reassigns_in_article_mode():
-    # In article/macro replay the store is last-write-wins (the engine's
-    # saveNode): the reused name reassigns the same node instead of raising.
-    tok = _article_replay.set(True)
-    try:
-        with gm.Store() as s:
-            for i in range(3):
-                p = gm.point(i, 0)
-        assert p.id == "p"
-        assert gm.emit(s).splitlines() == [
-            "p = \\point 0 0",
-            "p = \\point 1 0",
-            "p = \\point 2 0",
-        ]
-    finally:
-        _article_replay.reset(tok)
+def test_loop_reuse_reassigns():
+    # The store is last-write-wins (the engine's saveNode): a reused inferred
+    # name reassigns the same node. Distinct nodes need distinct ids
+    # (out=f"p-{i}").
+    with gm.Store() as s:
+        for i in range(3):
+            p = gm.point(i, 0)
+    assert p.id == "p"
+    assert gm.emit(s).splitlines() == [
+        "p = \\point 0 0",
+        "p = \\point 1 0",
+        "p = \\point 2 0",
+    ]
 
 
 def test_engine_auto_shaped_name_falls_back():
@@ -112,8 +95,7 @@ def test_engine_auto_shaped_name_falls_back():
 
 
 def test_system_default_name_reassigns():
-    # T/F are seeded system nodes. allocate_id exempts SYSTEM_NODE_IDS from the
-    # duplicate-id raise, so an inferred name matching a system default now
+    # T/F are seeded system nodes. An inferred name matching a system default
     # reassigns it (last-write-wins) rather than falling back to an auto id.
     with gm.Store() as s:
         T = gm.scalar(2)
@@ -169,12 +151,17 @@ def test_chained_assignment_triple_and_taken_names():
         "y = \\scalar 2",
         "z = \\scalar 2",
     ]
-    # A chained assignment whose FIRST target id is already taken now raises
-    # (plain-authoring duplicate-id guard) instead of falling back to "b".
-    with gm.Store():
+    # A chained assignment whose FIRST target id is already taken reassigns it,
+    # then clones to the extra target.
+    with gm.Store() as s:
         gm.point(0, 0, out="a")
-        with pytest.raises(ValueError, match="already exists"):
-            a = b = gm.point(1, 1)
+        a = b = gm.point(1, 1)
+    assert a.id == "a"
+    assert gm.emit(s).splitlines() == [
+        "a = \\point 0 0",
+        "a = \\point 1 1",
+        "b = \\point 1 1",
+    ]
 
 
 def test_walrus_value_assigned_names_both():
@@ -194,17 +181,19 @@ def test_helper_function_indirection_falls_back():
     assert p.id == "p-0"
 
 
-def test_inferred_and_explicit_duplicates_both_raise():
-    # Inferred and explicit out= ids share one guard: reusing either in
-    # plain-authoring mode raises. (In article/macro mode both reassign.)
-    with gm.Store():
+def test_inferred_and_explicit_duplicates_both_reassign():
+    # Inferred and explicit out= ids behave identically: reusing either
+    # overwrites the node (the engine's saveNode is last-write-wins).
+    with gm.Store() as s:
         gm.point(0, 0, out="a")
-        with pytest.raises(ValueError, match="already exists"):
-            a = gm.point(1, 1)  # inferred "a" is taken
-    with gm.Store():
+        a = gm.point(1, 1)  # inferred "a" is taken → reassign
+    assert a.id == "a"
+    assert s.nodes["a"] is a
+    assert gm.emit(s).splitlines() == ["a = \\point 0 0", "a = \\point 1 1"]
+    with gm.Store() as s:
         gm.point(0, 0, out="a")
-        with pytest.raises(ValueError, match="already exists"):
-            gm.point(2, 2, out="a")  # explicit duplicate
+        gm.point(2, 2, out="a")  # explicit duplicate → reassign
+    assert gm.emit(s).splitlines() == ["a = \\point 0 0", "a = \\point 2 2"]
 
 
 def test_inferred_numbered_name_reserves_counter():

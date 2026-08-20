@@ -9,7 +9,7 @@ Like the other two effects, reveal records on the store's texatlas channel and i
 harvested by `harvest_tex_bindings` (never emitted as DSL). Reactivity comes from
 the store node a selector references — change it in a CommandLink and the revealed
 region follows. In a pygeomatic article a CommandLink holds **Python**, and
-article mode is last-write-wins, so you drive a gate by *reassigning* it
+assignment is last-write-wins, so you drive a gate by *reassigning* it
 (`b = gm.bool_(True)`, `k = gm.scalar(1)`) or animate a scalar with
 `gm.animate(k, 3)`. There is **no new tex API and no new DSL keyword**.
 

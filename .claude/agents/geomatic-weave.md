@@ -45,7 +45,7 @@ lives in ```` ```pygeomatic ```` fences and in prose spans:
   `{label}(ref:name)` reveals it: the compiler renders **every command but the
   last as a hidden `{}()` span, then the last as the visible labeled span**, so
   one click lands on a fully set-up scene.
-- **`{label}(python statement)`** in prose → an inline one-off; article mode is
+- **`{label}(python statement)`** in prose → an inline one-off; assignment is
   **last-write-wins**, so `scale = gm.scalar(0.5)` reassigns.
 
 The rule that governs grouping:

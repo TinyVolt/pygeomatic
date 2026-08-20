@@ -37,7 +37,7 @@ Python call → registry.py (geomatic_fn decorator) → store.py (tape + nodes) 
                                                parse.py (inverse: DSL → tape)
 ```
 
-**`nodes.py`** — All geomatic node types (`GNode` subclasses: `Point`, `Scalar`, `Circle`, `Array`, etc.). Nodes hold optional numeric payloads in private `PrivateAttr` fields. Property access (`.x`, `.center`, etc.) returns a new node carrying a `PropRef` that serializes to the `base.field` DSL argument form. Infix arithmetic is deliberately rejected — use `gm.add(a, b)` etc.
+**`nodes.py`** — All geomatic node types (`GNode` subclasses: `Point`, `Scalar`, `Circle`, `Array`, etc.). Nodes hold optional numeric payloads in private `PrivateAttr` fields. Property access (`.x`, `.center`, etc.) returns a new node carrying a `PropRef` that serializes to the `base.field` DSL argument form. Infix `+ - * /` and unary `-` are supported on Scalar/Complex/Array and route through the overload commands (`_arith` → `_infix`); every other node type raises with a "use the explicit pygeomatic function" message. `**`, `@` and the in-place forms (`+=`, …) always raise — in-place would rebind the Python name to a new node while the DSL node keeps its id and value.
 
 **`store.py`** — The `Store` holds two things: `commands: list[Command]` (the tape) and `nodes: dict[str, GNode]` (id → node map). A `Store` is a context manager; without one the module-level default store is used. `NameGenerator` mirrors the TypeScript `NameGenerator.ts` but uses dashed ids (`num-0`, `p-1`) to prevent collisions with engine-generated undashed ids (`num0`, `p1`). Two `ContextVar`s control replay modes: `_allow_engine_ids` (set during `parse_dsl`) and `_macro_replay` (set during macro body execution).
 
@@ -67,7 +67,8 @@ Python call → registry.py (geomatic_fn decorator) → store.py (tape + nodes) 
 
 ### Key constraints
 
-- **No infix arithmetic on nodes**: `a + b` raises. Each Python call = exactly one DSL line.
+- **Infix arithmetic is Scalar/Complex/Array only**: `a + b` records `\add a b`; the same operators on a Point/Circle/etc. raise. Prefer the infix form over `gm.add(a, b)` in article prose — it is shorter and emits the same DSL.
+- **One Python call = one DSL line, except variadic fusion**: chained same-operator infix collapses, so `a * b * c` records a single `\mul a b c` (`Store.fuse_variadic`, only for an anonymous just-recorded operand with no other consumer). Property access records nothing at all: `p.x` is a `PropRef` argument, not a `\x-coord` command.
 - **Id grammar**: letters, digits, dashes only; no underscores. Engine auto-ids (`p0`, `num1`) are rejected for authored `out=` — use dashed forms (`p-0`, `num-1`) or descriptive names.
 - **Text is single-line**: newlines in text values are collapsed to a single space.
 - **Coercions off by default**: pass exact node types unless you've explicitly enabled coercions.
