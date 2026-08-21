@@ -5,7 +5,7 @@ import pygeomatic as gm
 
 def test_emit_small_scene():
     with gm.Store() as s:
-        a = gm.point(1, 2, out="a")
+        a = gm.point(1, 2)
         b = gm.point(4, 6)
         gm.distance(a, b)
         c = gm.circle(a, 3)
@@ -80,6 +80,6 @@ def test_duplicate_out_id_reassigns():
     # id resolves to the second node.
     with gm.Store() as s:
         gm.point(0, 0, out="a")
-        second = gm.point(1, 1, out="a")
-    assert s.nodes["a"] is second
+        gm.point(1, 1, out="a")
+    assert s.nodes["a"].numeric == (1.0, 1.0)  # the second node won
     assert gm.emit(s).splitlines() == ["a = \\point 0 0", "a = \\point 1 1"]

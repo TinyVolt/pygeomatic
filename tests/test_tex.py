@@ -17,7 +17,7 @@ from pygeomatic import TexError
 
 def test_worked_example_value_bind():
     with gm.Store() as s:
-        b = gm.scalar(2, out="b")
+        b = gm.scalar(2)
         gm.tex("integral").int.upper.bind(b)
     assert gm.harvest_tex_bindings(s) == {
         "integral": {"values": [{"slot": "int.upper", "node": "b"}]}
@@ -26,7 +26,7 @@ def test_worked_example_value_bind():
 
 def test_worked_example_row_highlight():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.rows().eq(r), color="#f472b6")
     assert gm.harvest_tex_bindings(s) == {
@@ -76,14 +76,14 @@ def test_worked_example_upper_triangle():
 
 def test_tex_records_no_dsl_command():
     with gm.Store() as s:
-        a = gm.scalar(4, out="a")
+        a = gm.scalar(4)
         gm.tex("f").frac.num.bind(a)
     assert gm.emit(s) == "a = \\scalar 4"  # the tex op left no line
 
 
 def test_bindings_scoped_to_store():
     with gm.Store():
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         gm.tex("f").int.upper.bind(a)
     with gm.Store() as s2:
         assert gm.harvest_tex_bindings(s2) == {}
@@ -100,7 +100,7 @@ def test_bindings_scoped_to_store():
 @pytest.mark.parametrize("family", ["underbrace", "overbrace"])
 def test_value_bind_into_brace_is_rejected(family):
     with gm.Store():
-        a = gm.scalar(3, out="a")
+        a = gm.scalar(3)
         t = gm.tex("f")
         with pytest.raises(TexError, match="reveal-only"):
             getattr(t, family).label.bind(a)
@@ -111,7 +111,7 @@ def test_value_bind_into_brace_is_rejected(family):
 @pytest.mark.parametrize("family", ["underbrace", "overbrace"])
 def test_reveal_on_brace_is_allowed(family):
     with gm.Store() as s:
-        g = gm.scalar(1, out="g")
+        g = gm.scalar(1)
         getattr(gm.tex("f"), family).reveal(g)
     (rv,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
     assert rv["slot"] == family
@@ -119,7 +119,7 @@ def test_reveal_on_brace_is_allowed(family):
 
 def test_value_bind_into_value_family_still_works():
     with gm.Store() as s:
-        a = gm.scalar(2, out="a")
+        a = gm.scalar(2)
         gm.tex("f").frac.denom.bind(a)  # frac is bindable, no error
     (entry,) = gm.harvest_tex_bindings(s)["f"]["values"]
     assert entry["slot"] == "frac.denom"
@@ -139,7 +139,7 @@ def test_register_tex_schema_rejects_unknown_op():
 
 def test_show_symbol_and_fmt_recorded():
     with gm.Store() as s:
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         gm.tex("f").int.upper.bind(a, show="symbol", fmt=".2f")
     (entry,) = gm.harvest_tex_bindings(s)["f"]["values"]
     assert entry == {"slot": "int.upper", "node": "a", "show": "symbol", "fmt": ".2f"}
@@ -147,7 +147,7 @@ def test_show_symbol_and_fmt_recorded():
 
 def test_show_value_is_omitted_as_default():
     with gm.Store() as s:
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         gm.tex("f").int.upper.bind(a, show="value")
     (entry,) = gm.harvest_tex_bindings(s)["f"]["values"]
     assert "show" not in entry and "fmt" not in entry
@@ -155,21 +155,21 @@ def test_show_value_is_omitted_as_default():
 
 def test_fmt_d_allowed():
     with gm.Store() as s:
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         gm.tex("f").int.upper.bind(a, fmt="d")
     assert gm.harvest_tex_bindings(s)["f"]["values"][0]["fmt"] == "d"
 
 
 def test_invalid_show_rejected():
     with gm.Store():
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         with pytest.raises(TexError, match="show must be"):
             gm.tex("f").int.upper.bind(a, show="glow")
 
 
 def test_invalid_fmt_rejected():
     with gm.Store():
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         with pytest.raises(TexError, match="invalid fmt"):
             gm.tex("f").int.upper.bind(a, fmt="%.2f")
 
@@ -180,7 +180,7 @@ def test_fmt_percent_allowed(fmt):
     it, so the format was documented in neither place and reachable from
     neither. Keep the two sides agreeing."""
     with gm.Store() as s:
-        a = gm.scalar(0.5, out="a")
+        a = gm.scalar(0.5)
         gm.tex("f").int.upper.bind(a, fmt=fmt)
     assert gm.harvest_tex_bindings(s)["f"]["values"][0]["fmt"] == fmt
 
@@ -188,7 +188,7 @@ def test_fmt_percent_allowed(fmt):
 @pytest.mark.parametrize("fmt", ["%", ".2", ".f", "f", "2f", ".2ff", ".2%%", "x"])
 def test_still_rejects_formats_the_runtime_cannot_read(fmt):
     with gm.Store():
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         with pytest.raises(TexError, match="invalid fmt"):
             gm.tex("f").int.upper.bind(a, fmt=fmt)
 
@@ -207,14 +207,14 @@ def test_bind_node_by_id_string():
 
 def test_occurrence_index_addressing():
     with gm.Store() as s:
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         gm.tex("f").ints[1].lower.bind(a)
     assert gm.harvest_tex_bindings(s)["f"]["values"][0]["slot"] == "int[1].lower"
 
 
 def test_bind_whole_family_without_slot():
     with gm.Store() as s:
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         gm.tex("f").frac.bind(a)
     assert gm.harvest_tex_bindings(s)["f"]["values"][0]["slot"] == "frac"
 
@@ -227,7 +227,7 @@ def test_unknown_family_rejected():
 
 def test_unknown_slot_rejected():
     with gm.Store():
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         with pytest.raises(TexError, match="has no slot 'sideways'"):
             gm.tex("f").int.sideways.bind(a)
 
@@ -251,8 +251,8 @@ def test_negative_occurrence_index_rejected():
 
 def test_and_or_scale_selectors():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
-        u = gm.scalar(1, out="u")
+        r = gm.scalar(0)
+        u = gm.scalar(1)
         M = gm.tex("M")
         sel = M.rows().eq(r).and_(M.cols().ge(1)).scale(u)
         M.highlight(sel)
@@ -294,10 +294,10 @@ def test_free_axes_match_method_axes():
     from pygeomatic import cols, rows
 
     with gm.Store() as s1:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         gm.tex("M").highlight(rows == r)
     with gm.Store() as s2:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.rows().eq(r))
     assert gm.harvest_tex_bindings(s1) == gm.harvest_tex_bindings(s2)
@@ -347,7 +347,7 @@ def test_eq_ge_le_gt_lt_operators():
     from pygeomatic import rows
 
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(rows == r)
         M.highlight(rows >= 2)
@@ -368,8 +368,8 @@ def test_strict_operators_accept_node_bounds():
     from pygeomatic import cols, rows
 
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
-        c = gm.scalar(0, out="c")
+        r = gm.scalar(0)
+        c = gm.scalar(0)
         M = gm.tex("M")
         M.highlight((rows > r) & (cols < c))  # node bounds now allowed
     top = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
@@ -417,7 +417,7 @@ def test_slice_exclusive_stop():
 
 def test_slice_node_stop_is_reactive():
     with gm.Store() as s:
-        n = gm.scalar(0, out="n")
+        n = gm.scalar(0)
         M = gm.tex("M")
         M[:n, :].highlight()  # exclusive node stop -> row < n, stays reactive
     sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
@@ -426,7 +426,7 @@ def test_slice_node_stop_is_reactive():
 
 def test_single_index_is_equality_and_node_is_reactive():
     with gm.Store() as s:
-        c = gm.scalar(0, out="c")
+        c = gm.scalar(0)
         M = gm.tex("M")
         M[:, c].highlight()  # exact column, node -> reactive
     sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
@@ -435,7 +435,7 @@ def test_single_index_is_equality_and_node_is_reactive():
 
 def test_slice_node_start_is_reactive():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M[r:, :].highlight()
     sel = gm.harvest_tex_bindings(s)["M"]["highlights"][0]["selector"]
@@ -499,7 +499,7 @@ def test_diag_triu_tril():
 
 def test_matrix_default_is_omitted_for_v1_parity():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.rows().eq(r), color="#f472b6")  # default matrix=0
     (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
@@ -513,7 +513,7 @@ def test_matrix_default_is_omitted_for_v1_parity():
 
 def test_matrix_zero_explicit_is_still_omitted():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.rows().eq(r), matrix=0)
     (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
@@ -522,7 +522,7 @@ def test_matrix_zero_explicit_is_still_omitted():
 
 def test_explicit_matrix_index_serialized():
     with gm.Store() as s:
-        c = gm.scalar(0, out="c")
+        c = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.cols().eq(c), color="#6aa8ff", matrix=1)
     (h,) = gm.harvest_tex_bindings(s)["M"]["highlights"]
@@ -534,8 +534,8 @@ def test_two_matrices_in_one_formula():
     from pygeomatic import cols, rows
 
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
-        c = gm.scalar(0, out="c")
+        r = gm.scalar(0)
+        c = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(rows == r, color="#f472b6")  # matrix 0 (omitted)
         M.highlight(cols == c, color="#6aa8ff", matrix=1)
@@ -583,7 +583,7 @@ def test_bool_matrix_index_rejected():
 
 def test_palette_name_resolved_to_hex():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.rows().eq(r), color="BLUE")
     assert gm.harvest_tex_bindings(s)["M"]["highlights"][0]["color"] == gm.PALETTE["COLOR-BLUE"]
@@ -591,7 +591,7 @@ def test_palette_name_resolved_to_hex():
 
 def test_raw_hex_passes_through():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.rows().eq(r), color="#abcdef")
     assert gm.harvest_tex_bindings(s)["M"]["highlights"][0]["color"] == "#abcdef"
@@ -599,7 +599,7 @@ def test_raw_hex_passes_through():
 
 def test_unknown_color_name_passes_through():
     with gm.Store() as s:
-        r = gm.scalar(0, out="r")
+        r = gm.scalar(0)
         M = gm.tex("M")
         M.highlight(M.rows().eq(r), color="rebeccapurple")
     assert gm.harvest_tex_bindings(s)["M"]["highlights"][0]["color"] == "rebeccapurple"
@@ -620,7 +620,7 @@ def test_register_tex_schema_extends_families():
     with gm.Store() as s:
         gm.register_tex_schema("binom", ("top", "bottom"))
         try:
-            a = gm.scalar(1, out="a")
+            a = gm.scalar(1)
             gm.tex("f").binom.top.bind(a)
             assert gm.harvest_tex_bindings(s)["f"]["values"][0]["slot"] == "binom.top"
         finally:
@@ -635,7 +635,7 @@ def test_register_tex_schema_extends_families():
 def test_reveal_bare_brace_splices_label_slot():
     # A bare over/underbrace address reveals the brace glyph + label (body stays).
     with gm.Store() as s:
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         t = gm.tex("pyth")
         t.underbrace.reveal(b)
     assert gm.harvest_tex_bindings(s) == {
@@ -645,7 +645,7 @@ def test_reveal_bare_brace_splices_label_slot():
 
 def test_reveal_brace_label_and_body_addresses():
     with gm.Store() as s:
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         t = gm.tex("f")
         t.underbrace.label.reveal(b)
         t.overbrace.body.reveal(b)
@@ -655,8 +655,8 @@ def test_reveal_brace_label_and_body_addresses():
 
 def test_reveal_brace_occurrence_index():
     with gm.Store() as s:
-        b1 = gm.bool_(0, out="b1")
-        b2 = gm.bool_(0, out="b2")
+        b1 = gm.bool_(0)
+        b2 = gm.bool_(0)
         t = gm.tex("expand")
         t.underbraces[0].reveal(b1)
         t.underbraces[1].reveal(b2)
@@ -667,7 +667,7 @@ def test_reveal_brace_occurrence_index():
 def test_reveal_bare_node_lowers_to_node_leaf():
     # A bare gate node/bool becomes the `{node}` SelectorExpr leaf.
     with gm.Store() as s:
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         gm.tex("f").underbrace.reveal(b)
     (r,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
     assert r["selector"] == {"node": "b"}
@@ -689,7 +689,7 @@ def test_reveal_unknown_gate_node_rejected():
 
 def test_reveal_derivation_is_an_align_target():
     with gm.Store() as s:
-        k = gm.scalar(0, out="k")
+        k = gm.scalar(0)
         d = gm.tex("deriv")
         d.rows().reveal(gm.rows < k)
     assert gm.harvest_tex_bindings(s) == {
@@ -710,7 +710,7 @@ def test_reveal_derivation_is_an_align_target():
 
 def test_reveal_align_occurrence_index():
     with gm.Store() as s:
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         gm.tex("d").rows().reveal(b, align=2)
     (r,) = gm.harvest_tex_bindings(s)["d"]["reveals"]
     assert r["align"] == 2
@@ -719,7 +719,7 @@ def test_reveal_align_occurrence_index():
 def test_reveal_single_line_gated_by_bool():
     # (rows == 2) & b — a bare node ANDed into a real selector.
     with gm.Store() as s:
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         d = gm.tex("d")
         d.rows().reveal((gm.rows == 2) & b)
     (r,) = gm.harvest_tex_bindings(s)["d"]["reveals"]
@@ -734,7 +734,7 @@ def test_reveal_matrix_target_keeps_index_zero():
     # Unlike highlight, the matrix index is the target discriminator, so it is
     # always written to the wire — even when 0.
     with gm.Store() as s:
-        k = gm.scalar(0, out="k")
+        k = gm.scalar(0)
         M = gm.tex("mat")
         M.reveal(M.cols() < k)
     assert gm.harvest_tex_bindings(s) == {
@@ -755,7 +755,7 @@ def test_reveal_matrix_target_keeps_index_zero():
 
 def test_reveal_matrix_picks_occurrence():
     with gm.Store() as s:
-        k = gm.scalar(0, out="k")
+        k = gm.scalar(0)
         M = gm.tex("mat")
         M.reveal(M.cols() < k, matrix=1)
     (r,) = gm.harvest_tex_bindings(s)["mat"]["reveals"]
@@ -764,7 +764,7 @@ def test_reveal_matrix_picks_occurrence():
 
 def test_reveal_collapse_mode_recorded_for_slot():
     with gm.Store() as s:
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         gm.tex("f").underbrace.reveal(b, mode="collapse")
     (r,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
     assert r["mode"] == "collapse"
@@ -772,7 +772,7 @@ def test_reveal_collapse_mode_recorded_for_slot():
 
 def test_reveal_fade_mode_is_omitted_as_default():
     with gm.Store() as s:
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         gm.tex("f").underbrace.reveal(b, mode="fade")
     (r,) = gm.harvest_tex_bindings(s)["f"]["reveals"]
     assert "mode" not in r
@@ -780,21 +780,21 @@ def test_reveal_fade_mode_is_omitted_as_default():
 
 def test_reveal_matrix_rejects_collapse():
     with gm.Store():
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         with pytest.raises(TexError, match="only mode='fade'"):
             gm.tex("m").reveal(b, mode="collapse")
 
 
 def test_reveal_invalid_mode_rejected():
     with gm.Store():
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         with pytest.raises(TexError, match="reveal mode must be"):
             gm.tex("f").underbrace.reveal(b, mode="pop")
 
 
 def test_reveal_negative_align_and_matrix_rejected():
     with gm.Store():
-        b = gm.bool_(0, out="b")
+        b = gm.bool_(0)
         with pytest.raises(TexError, match="align index"):
             gm.tex("d").rows().reveal(b, align=-1)
         with pytest.raises(TexError, match="matrix index"):
@@ -810,7 +810,7 @@ def test_reveal_non_selector_non_node_rejected():
 def test_reveal_absent_when_only_values_and_highlights():
     # A formula with no reveals drops the key entirely (byte-parity with v1).
     with gm.Store() as s:
-        a = gm.scalar(1, out="a")
+        a = gm.scalar(1)
         gm.tex("f").int.upper.bind(a)
     assert "reveals" not in gm.harvest_tex_bindings(s)["f"]
 
@@ -893,7 +893,7 @@ def test_chained_comparison_raises_instead_of_dropping_a_term():
 
 def test_and_or_not_on_a_selector_raise():
     with gm.Store():
-        b = gm.bool_(False, out="b")
+        b = gm.bool_(False)
         with pytest.raises(TexError, match="no truth value"):
             (gm.rows == 1) and (gm.cols == 2)
         with pytest.raises(TexError, match="no truth value"):

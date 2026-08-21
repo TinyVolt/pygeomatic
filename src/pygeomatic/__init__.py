@@ -122,6 +122,11 @@ from .tex import (  # noqa: F401
     tex,
 )
 from .onclick import OnClickError, harvest_click_handlers  # noqa: F401
+from .onpageload import (  # noqa: F401
+    PageLoadError,
+    harvest_page_load,
+    onpageload,
+)
 from . import ui  # noqa: F401  — gm.ui.slider(...), gm.ui.onclick(node), ...
 from .ui import UIError, render_widget_html  # noqa: F401
 

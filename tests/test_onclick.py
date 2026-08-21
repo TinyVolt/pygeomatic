@@ -21,9 +21,9 @@ def fence(code: str) -> str:
 
 def test_handler_is_harvested_and_leaves_no_dsl():
     with gm.Store() as s:
-        t = gm.annotate_text_box("click me", 2, 3, out="t")
+        t = gm.annotate_text_box("click me", 2, 3)
         with gm.ui.onclick(t):
-            p = gm.point(2, 3, out="p")
+            p = gm.point(2, 3)
             gm.gt(gm.distance(p, gm.p0), 1, out="far")
 
     # The scene emits exactly what it would with no handler at all.
@@ -44,7 +44,7 @@ def test_handler_is_harvested_and_leaves_no_dsl():
 
 def test_handlers_scoped_to_store():
     with gm.Store():
-        t = gm.annotate_text_box("a", 0, 0, out="t")
+        t = gm.annotate_text_box("a", 0, 0)
         with gm.ui.onclick(t):
             gm.point(1, 1)
     with gm.Store() as s2:
@@ -53,7 +53,7 @@ def test_handlers_scoped_to_store():
 
 def test_reopening_replaces_the_handler():
     with gm.Store() as s:
-        t = gm.annotate_text_box("a", 0, 0, out="t")
+        t = gm.annotate_text_box("a", 0, 0)
         with gm.ui.onclick(t):
             gm.point(1, 1, out="first")
         with gm.ui.onclick(t):
@@ -65,8 +65,8 @@ def test_reopening_replaces_the_handler():
 
 def test_two_nodes_keep_separate_handlers():
     with gm.Store() as s:
-        a = gm.circle(gm.p0, 1, out="a")
-        b = gm.circle(gm.p0, 2, out="b")
+        a = gm.circle(gm.p0, 1)
+        b = gm.circle(gm.p0, 2)
         with gm.ui.onclick(a):
             gm.point(1, 1, out="pa")
         with gm.ui.onclick(b):
@@ -81,9 +81,9 @@ def test_two_nodes_keep_separate_handlers():
 
 def test_body_nodes_remain_registered():
     with gm.Store() as s:
-        t = gm.annotate_text_box("a", 0, 0, out="t")
+        t = gm.annotate_text_box("a", 0, 0)
         with gm.ui.onclick(t):
-            far = gm.gt(gm.scalar(3), 1, out="far")
+            far = gm.gt(gm.scalar(3), 1)
         # Readable afterwards, and usable as a gm.when gate — which records no
         # DSL, so it does not violate the main-tape rule.
         assert s.nodes["far"] is far
@@ -94,24 +94,35 @@ def test_body_nodes_remain_registered():
     ]
 
 
-def test_main_tape_may_not_consume_a_handler_node():
+def test_handler_may_reassign_a_main_tape_node():
+    """A handler that redefines an existing node is the ordinary case: the main
+    tape defines the circle, the click changes it, later commands use it."""
     with gm.Store() as s:
-        t = gm.annotate_text_box("a", 0, 0, out="t")
+        t = gm.annotate_text_box("click me", 0, 0)
+        c = gm.circle(gm.p0, 1)
         with gm.ui.onclick(t):
-            p = gm.point(1, 1, out="p")
-        gm.circle(p, 2)  # runs at load time, when `p` does not exist yet
-        with pytest.raises(OnClickError, match="only run when the reader clicks"):
-            gm.harvest_click_handlers(s)
+            c = gm.circle(gm.p0, 4)
+        gm.translate(c, 2, 0)
+    assert gm.harvest_click_handlers(s) == {
+        "t": {"commands": ["c = \\circle p0 4"]}
+    }
+    assert gm.emit(s).splitlines()[-2:] == [
+        "c = \\circle p0 1",
+        "\\translate c 2 0",
+    ]
 
 
-def test_property_access_to_a_handler_node_is_caught_too():
+def test_harvest_does_not_police_handler_node_references():
+    """Consuming a node ONLY a handler defines is a define-before-use error the
+    article round-trip gate reports; harvest just serializes."""
     with gm.Store() as s:
-        t = gm.annotate_text_box("a", 0, 0, out="t")
+        t = gm.annotate_text_box("a", 0, 0)
         with gm.ui.onclick(t):
-            p = gm.point(1, 1, out="p")
-        gm.scalar(0) + p.x
-        with pytest.raises(OnClickError, match=r"\bp\b"):
-            gm.harvest_click_handlers(s)
+            p = gm.point(1, 1)
+        gm.circle(p, 2)
+        assert gm.harvest_click_handlers(s) == {
+            "t": {"commands": ["p = \\point 1 1"]}
+        }
 
 
 # ---------------------------------------------------------------------------
@@ -121,9 +132,9 @@ def test_property_access_to_a_handler_node_is_caught_too():
 
 def test_fusion_barrier_at_both_edges():
     with gm.Store() as s:
-        t = gm.annotate_text_box("a", 0, 0, out="t")
-        a = gm.scalar(1, out="a")
-        b = gm.scalar(2, out="b")
+        t = gm.annotate_text_box("a", 0, 0)
+        a = gm.scalar(1)
+        b = gm.scalar(2)
         a + b  # anonymous, fusable — must NOT be absorbed by the handler
         with gm.ui.onclick(t):
             a + b  # nor absorb the main-tape command before it
@@ -146,7 +157,7 @@ def test_fusion_barrier_at_both_edges():
 
 def test_empty_body_raises():
     with gm.Store():
-        t = gm.annotate_text_box("a", 0, 0, out="t")
+        t = gm.annotate_text_box("a", 0, 0)
         with pytest.raises(OnClickError, match="recorded no commands"):
             with gm.ui.onclick(t):
                 pass
@@ -154,8 +165,8 @@ def test_empty_body_raises():
 
 def test_nesting_raises():
     with gm.Store():
-        a = gm.circle(gm.p0, 1, out="a")
-        b = gm.circle(gm.p0, 2, out="b")
+        a = gm.circle(gm.p0, 1)
+        b = gm.circle(gm.p0, 2)
         with pytest.raises(OnClickError, match="do not nest"):
             with gm.ui.onclick(a):
                 gm.point(1, 1)
@@ -187,7 +198,7 @@ def test_non_node_target_raises():
 
 def test_ui_control_inside_a_handler_raises():
     with gm.Store():
-        t = gm.annotate_text_box("a", 0, 0, out="t")
+        t = gm.annotate_text_box("a", 0, 0)
         with pytest.raises(UIError, match="cannot be created inside"):
             with gm.ui.onclick(t):
                 gm.ui.slider(1, 5)

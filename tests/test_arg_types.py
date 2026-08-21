@@ -41,7 +41,7 @@ def test_array_rejected_for_point_variadic():
 
 def test_scalar_node_rejected_for_point_param():
     with gm.Store():
-        s = gm.scalar(5, out="s")
+        s = gm.scalar(5)
         with pytest.raises(TypeError, match="expects Point, got a Scalar node"):
             gm.circle(s, 2)
 
@@ -54,7 +54,7 @@ def test_keyword_skips_optional_middle_default():
     # /height. fontSize must be materialised on the tape (14), not shifted.
     # The Point coerces to its (x, y) scalars, consuming the x AND y slots.
     with gm.Store() as st:
-        p = gm.point(0, 0, out="p")
+        p = gm.point(0, 0)
         gm.annotate_text_box("hi", p, width=2, height=2, out="box")
     # tape is positional: text, x, y, fontSize(=14 default), width, height
     assert "box = \\annotate-text-box text-0 p.x p.y 14 2 2" in gm.emit(st)
@@ -62,7 +62,7 @@ def test_keyword_skips_optional_middle_default():
 
 def test_keyword_by_name_matches_position():
     with gm.Store() as st:
-        p = gm.point(0, 0, out="p")
+        p = gm.point(0, 0)
         gm.annotate_text_box("hi", x=p, fontSize=20, out="box")
     # width/height omitted (trailing) stay off the tape
     assert "box = \\annotate-text-box text-0 p.x p.y 20" in gm.emit(st)
@@ -76,7 +76,7 @@ def test_keyword_unknown_name_rejected():
 
 def test_keyword_duplicate_position_and_keyword_rejected():
     with gm.Store() as st:
-        p = gm.point(0, 0, out="p")
+        p = gm.point(0, 0)
         with pytest.raises(TypeError, match="given by both position and keyword"):
             gm.annotate_text_box("hi", p, 14, fontSize=14)
 
@@ -84,7 +84,7 @@ def test_keyword_duplicate_position_and_keyword_rejected():
 def test_keyword_coercion_spill_collides_with_keyword():
     # x=p expands into the x AND y slots; also supplying y collides.
     with gm.Store() as st:
-        p = gm.point(0, 0, out="p")
+        p = gm.point(0, 0)
         with pytest.raises(TypeError, match="given by both position and keyword"):
             gm.annotate_text_box("hi", x=p, y=3)
 
@@ -101,14 +101,14 @@ def test_keyword_node_default_hole_rejected():
 
 def test_broadcast_array_of_scalars_for_scalar_param():
     with gm.Store() as st:
-        xs = gm.linspace(0, 1, 3, out="xs")
+        xs = gm.linspace(0, 1, 3)
         gm.point(xs, xs, out="grid")
     assert "grid = \\point xs xs" in gm.emit(st)
 
 
 def test_property_ref_scalar_accepted():
     with gm.Store() as st:
-        p = gm.point(1, 2, out="p")
+        p = gm.point(1, 2)
         gm.mul(p.x, 2, out="d")
     assert "d = \\mul p.x 2" in gm.emit(st)
 
@@ -128,8 +128,8 @@ def test_numeric_literal_accepted_for_scalar_and_any():
 def test_python_bool_accepted_for_any_param():
     # A bare Python bool in an untyped (Any) slot is its 0/1 value, like 1/0.
     with gm.Store() as s:
-        t = gm.bool_(True, out="t")
-        f = gm.bool_(False, out="f")
+        t = gm.bool_(True)
+        f = gm.bool_(False)
     assert (t.numeric, f.numeric) == (True, False)
     assert gm.emit(s) == "t = \\bool 1\nf = \\bool 0"
 
@@ -145,11 +145,11 @@ def test_node_coercion_on_by_default():
     # Scalar -> Text is an engine coercion: allowed by default, strict only
     # inside allow_coercions(False).
     with gm.Store() as st:
-        s = gm.scalar(5, out="s")
+        s = gm.scalar(5)
         gm.text(s, out="t")
     assert "t = \\text s" in gm.emit(st)
     with gm.Store():
-        s = gm.scalar(5, out="s")
+        s = gm.scalar(5)
         with gm.allow_coercions(False):
             with pytest.raises(TypeError, match="expects Text, got a Scalar node"):
                 gm.text(s)
@@ -160,8 +160,8 @@ def test_point_coerces_to_two_scalar_args():
     # consuming two parameter slots — mirroring CommandExecutor.ts advancing
     # paramIndex by coercedIds.length.
     with gm.Store() as st:
-        p = gm.point(1, 2, out="p")
-        box = gm.annotate_text_box("hi", p, width=2, height=2, out="box")
+        p = gm.point(1, 2)
+        box = gm.annotate_text_box("hi", p, width=2, height=2)
     assert "box = \\annotate-text-box text-0 p.x p.y 14 2 2" in gm.emit(st)
     # The numeric body received the coordinates, not the raw Point.
     assert box._position.numeric == (1.0, 2.0)
@@ -171,7 +171,7 @@ def test_point_coerces_positionally_with_trailing_args():
     # `\annotate-text-box t p 20` style: args after the Point shift past BOTH
     # coordinate slots.
     with gm.Store() as st:
-        p = gm.point(1, 2, out="p")
+        p = gm.point(1, 2)
         gm.annotate_text_box("hi", p, 20, out="box")
     assert "box = \\annotate-text-box text-0 p.x p.y 20" in gm.emit(st)
 
@@ -180,7 +180,7 @@ def test_circle_coerces_to_its_child_nodes():
     # circleToScalar binds to the circle's existing radius node
     # (type-coercion.ts returns node.radius.id).
     with gm.Store() as st:
-        c = gm.circle(gm.point(0, 0, out="p"), 2, out="c")
+        c = gm.circle(gm.point(0, 0, out="p"), 2)
         gm.circle(gm.point(1, 1, out="q"), c, out="c2")  # Circle in the Scalar radius slot
     assert "c2 = \\circle q c.radius" in gm.emit(st)
 
@@ -189,7 +189,7 @@ def test_line_coerces_to_two_point_args():
     # lineToPointsArray: a Line in a Point slot becomes its two endpoints,
     # consuming both Point parameters.
     with gm.Store() as st:
-        l = gm.line(gm.point(0, 0, out="a"), gm.point(1, 1, out="b"), out="l")
+        l = gm.line(gm.point(0, 0, out="a"), gm.point(1, 1, out="b"))
         gm.line(l, out="l2")
     assert "l2 = \\line l.p1 l.p2" in gm.emit(st)
 
@@ -229,7 +229,7 @@ def test_array_of_points_accepted_for_point_param(tmp_path):
     gm.load_extensions(str(path))
     try:
         with gm.Store() as st:
-            pts = gm.polyline(gm.point(0, 0), gm.point(1, 1), out="pts")  # Array<Point>
+            pts = gm.polyline(gm.point(0, 0), gm.point(1, 1))  # Array<Point>
             gm.la_mat_from_point_array(pts, out="M")
         assert "M = \\la-mat-from-point-array pts" in gm.emit(st)
     finally:
@@ -270,12 +270,12 @@ def test_arrow_to_array_param_gated_by_switch(tmp_path):
     try:
         # Default: the coercion is permitted.
         with gm.Store() as st:
-            v = gm.la_vec2d(3, 4, out="v")
+            v = gm.la_vec2d(3, 4)
             gm.la_sink(v, out="out")
         assert "out = \\la-sink v" in gm.emit(st)
         # Strict: Arrow into an Array param rejects.
         with gm.Store():
-            v = gm.la_vec2d(3, 4, out="v")
+            v = gm.la_vec2d(3, 4)
             with gm.allow_coercions(False):
                 with pytest.raises(TypeError, match="expects Array, got a Arrow node"):
                     gm.la_sink(v)

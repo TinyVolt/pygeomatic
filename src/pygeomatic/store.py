@@ -254,10 +254,12 @@ class Store:
         # that must not run in document order. Last write wins: opening onclick
         # again for the same node replaces its handler.
         self.click_handlers: dict[str, dict] = {}
-        # Ids defined inside some handler. The main tape may not consume one
-        # (onclick._check_no_dangling_refs); at read time the engine would
-        # auto-create a random-valued node in its place.
-        self.handler_output_ids: set[str] = set()
+        # gm.onpageload commands: the scene the article opens with, run before
+        # any CommandLink (and again after any `\clear`). Moved off the tape by
+        # the block, exactly like click_handlers, but there is one per article
+        # rather than one per node — hence a plain list. None means "no block
+        # yet", which is how a second one is detected; [] never occurs.
+        self.page_load: Optional[list[str]] = None
         self._token = None
         # Every canvas starts with the engine's default nodes (`p0`, `T`/`F`,
         # `learning-rate`, ...); seed them so a scene can reference them without
