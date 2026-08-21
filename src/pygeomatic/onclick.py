@@ -34,8 +34,11 @@ Three properties define the shape:
    registered function, so nothing about the grammar or the registry changes.
 
 The consequence of (1) is the one rule an author has to keep: the MAIN tape may
-not consume a node a handler defines. `harvest_click_handlers` enforces it —
-at read time the engine would auto-create a random-valued node in its place.
+not consume a node ONLY a handler defines, since at read time nothing has
+created it yet. Reassigning a node the main tape already defined is fine, and is
+the usual reason to write a handler at all. Nothing here checks this — the
+article's round-trip gate replays the compiled DSL with auto-create disabled, so
+a genuinely undefined id fails there with a line number.
 """
 
 from __future__ import annotations
@@ -45,7 +48,7 @@ from contextvars import ContextVar
 from typing import Optional
 
 from .emit import render_command
-from .nodes import GNode, IdRef, PropRef
+from .nodes import GNode
 from .store import IDENTIFIER_RE, Store, current_store
 
 # Node types with no canvas presence: a handler on one could never fire, so say
@@ -141,47 +144,11 @@ def onclick(target: GNode):
     store.click_handlers[node_id] = {
         "commands": [render_command(cmd) for cmd in captured]
     }
-    store.handler_output_ids.update(
-        cmd.output_id for cmd in captured if cmd.output_id is not None
-    )
 
 
 # ---------------------------------------------------------------------------
 # Harvest
 # ---------------------------------------------------------------------------
-
-
-def _referenced_ids(command) -> set:
-    ids = set()
-    for token in command.args:
-        if isinstance(token, IdRef):
-            ids.add(token.id)
-        elif isinstance(token, PropRef):
-            ids.add(token.base)
-    return ids
-
-
-def _check_no_dangling_refs(store: Store) -> None:
-    """No main-tape command may consume a node only a handler defines.
-
-    The article's commands run in document order at read time, before any click:
-    the consumer would find no such node and the engine would auto-create a
-    random-valued one in its place (`createAndSaveNode`) — a silently wrong
-    scene rather than an error. This is the same failure the article
-    round-trip gate exists to catch, and handler commands are invisible to it.
-    """
-    if not store.handler_output_ids:
-        return
-    for cmd in store.commands:
-        offenders = _referenced_ids(cmd) & store.handler_output_ids
-        if offenders:
-            names = ", ".join(sorted(offenders))
-            raise OnClickError(
-                f"{render_command(cmd)!r} uses {names}, which is defined inside a "
-                f"gm.ui.onclick block. A handler's commands only run when the reader "
-                f"clicks, so the rest of the scene cannot depend on them — move the "
-                f"definition out of the handler, or move this command into it."
-            )
 
 
 def harvest_click_handlers(store: Optional[Store] = None) -> dict:
@@ -192,7 +159,6 @@ def harvest_click_handlers(store: Optional[Store] = None) -> dict:
     is byte-for-byte unchanged.
     """
     store = store or current_store()
-    _check_no_dangling_refs(store)
     return {
         node_id: dict(handler) for node_id, handler in store.click_handlers.items()
     }

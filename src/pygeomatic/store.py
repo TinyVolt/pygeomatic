@@ -254,10 +254,6 @@ class Store:
         # that must not run in document order. Last write wins: opening onclick
         # again for the same node replaces its handler.
         self.click_handlers: dict[str, dict] = {}
-        # Ids defined inside some handler. The main tape may not consume one
-        # (onclick._check_no_dangling_refs); at read time the engine would
-        # auto-create a random-valued node in its place.
-        self.handler_output_ids: set[str] = set()
         self._token = None
         # Every canvas starts with the engine's default nodes (`p0`, `T`/`F`,
         # `learning-rate`, ...); seed them so a scene can reference them without

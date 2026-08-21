@@ -54,21 +54,30 @@ with gm.when(far):
 browser watches the node. So the prose is written at compile time and appears
 when the reader's click makes `far` true.
 
-**The one rule this creates:** the *main tape* may not consume a node a handler
-defines. At read time the article's commands all run before any click, so the
-consumer would find nothing there and the engine would auto-create a
-random-valued node in its place — a silently wrong scene rather than an error.
-`harvest_click_handlers` refuses:
+**The one rule this creates:** the *main tape* may not consume a node that
+**only** a handler defines. At read time the article's commands all run before
+any click, so the consumer would find nothing there:
 
 ```python
 with gm.ui.onclick(label):
     p = gm.point(1, 1)
-gm.circle(p, 2)        # OnClickError: `p` is defined inside a handler
+gm.circle(p, 2)        # `p` does not exist yet when this runs
 ```
 
-Move the definition out of the handler, or move the consumer into it. (Inside an
-article the round-trip gate usually reaches the same problem first, reporting it
-as an unknown node id.)
+Move the definition out of the handler, or move the consumer into it. Nothing in
+`onclick.py` checks this — the article's round-trip gate replays the compiled DSL
+with auto-create disabled, so it reports the undefined id with a line number.
+
+*Re*assigning is a different thing and is fine — in fact it is the usual reason
+to write a handler. The main tape defines the node, the click changes it (the
+engine's `saveNode` is last-write-wins), and later commands go on using it:
+
+```python
+c = gm.circle(gm.p0, 1)
+with gm.ui.onclick(label):
+    c = gm.circle(gm.p0, 4)    # same id `c`, bigger radius, on click
+gm.translate(c, 2, 0)          # fine: `c` exists from the main tape
+```
 
 ## 3. Handlers travel beside the article
 

@@ -94,24 +94,35 @@ def test_body_nodes_remain_registered():
     ]
 
 
-def test_main_tape_may_not_consume_a_handler_node():
+def test_handler_may_reassign_a_main_tape_node():
+    """A handler that redefines an existing node is the ordinary case: the main
+    tape defines the circle, the click changes it, later commands use it."""
+    with gm.Store() as s:
+        t = gm.annotate_text_box("click me", 0, 0, out="t")
+        c = gm.circle(gm.p0, 1, out="c")
+        with gm.ui.onclick(t):
+            c = gm.circle(gm.p0, 4, out="c")
+        gm.translate(c, 2, 0)
+    assert gm.harvest_click_handlers(s) == {
+        "t": {"commands": ["c = \\circle p0 4"]}
+    }
+    assert gm.emit(s).splitlines()[-2:] == [
+        "c = \\circle p0 1",
+        "\\translate c 2 0",
+    ]
+
+
+def test_harvest_does_not_police_handler_node_references():
+    """Consuming a node ONLY a handler defines is a define-before-use error the
+    article round-trip gate reports; harvest just serializes."""
     with gm.Store() as s:
         t = gm.annotate_text_box("a", 0, 0, out="t")
         with gm.ui.onclick(t):
             p = gm.point(1, 1, out="p")
-        gm.circle(p, 2)  # runs at load time, when `p` does not exist yet
-        with pytest.raises(OnClickError, match="only run when the reader clicks"):
-            gm.harvest_click_handlers(s)
-
-
-def test_property_access_to_a_handler_node_is_caught_too():
-    with gm.Store() as s:
-        t = gm.annotate_text_box("a", 0, 0, out="t")
-        with gm.ui.onclick(t):
-            p = gm.point(1, 1, out="p")
-        gm.scalar(0) + p.x
-        with pytest.raises(OnClickError, match=r"\bp\b"):
-            gm.harvest_click_handlers(s)
+        gm.circle(p, 2)
+        assert gm.harvest_click_handlers(s) == {
+            "t": {"commands": ["p = \\point 1 1"]}
+        }
 
 
 # ---------------------------------------------------------------------------
