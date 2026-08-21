@@ -113,6 +113,12 @@ def onclick(target: GNode):
 
     The commands leave the tape and run only when the reader clicks the node.
     Opening `onclick` again for the same node replaces the handler.
+
+    Legal inside a `gm.onpageload` block, and the natural way to write "a
+    clickable thing is on screen from the start": the handler's commands leave
+    the tape first, so the page-load block captures what remains around it. The
+    node it targets is created at load, which is exactly when the canvas needs
+    it to make the node clickable.
     """
     store = current_store()
     node_id = _validate_target(target)

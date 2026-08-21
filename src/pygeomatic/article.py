@@ -22,6 +22,14 @@ manifest instead, to run when the reader clicks the node. A fence whose only
 content is such a block therefore contributes no spans at all — and wrapping it
 in `group()` raises, since the group would record nothing.
 
+`with gm.onpageload():` is the second exception, the same way: its commands
+leave the tape for an `onpageload:v1` manifest and run once the page has loaded,
+ahead of every span. Because they HAVE run by the time the reader sees anything,
+the spans may consume what the block defined — so the round-trip gate below
+replays with those lines seeded ahead of the document's. Only the first fence
+may open one, and only before it has recorded anything, so that recording order
+still equals read-time order.
+
 The compiled document is re-read span-by-span at read time, so its command
 sequence must be executable in DOCUMENT order. A round-trip gate replays the
 compiled spans through `parse_dsl` and compares the re-emitted lines, catching
@@ -52,6 +60,8 @@ from .coercions import allow_coercions
 from .emit import emit, render_command
 from .latex_lint import lint_latex
 from .onclick import OnClickError, harvest_click_handlers, open_handler
+from .onpageload import _allowed as _page_load_allowed
+from .onpageload import harvest_page_load, open_page_load
 from .parse import DslParseError, parse_dsl
 from .store import Store, _auto_create_enabled, current_store
 from .tex import harvest_tex_bindings
@@ -132,6 +142,13 @@ def group(name: str):
             f"group {name!r} opened inside the gm.ui.onclick block for {handler!r}: a "
             "group is a run of commands prose can reveal, and a handler's commands "
             "leave the tape entirely — the reader clicks the node instead.",
+        )
+    if open_page_load():
+        raise ArticleError(
+            None,
+            f"group {name!r} opened inside the gm.onpageload block: a group is a run "
+            "of commands prose can reveal, and these leave the tape entirely — they "
+            "have already run by the time the reader sees the page.",
         )
     if any(g.name == name for g in rec.groups):
         raise ArticleError(None, f"duplicate group name {name!r}")
@@ -500,14 +517,20 @@ def _execute(executables: list[_Executable], allow: bool) -> tuple[Store, list[_
     namespace = {"gm": gm, "group": group, "md": md, "when": when}
     rec = _Recorder()
     rec_token = _recorder.set(rec)
+    # Only the document's first fence may open a gm.onpageload block. Everywhere
+    # else the flag stays False, so the block itself reports the rule (with the
+    # article line number) rather than this loop having to detect it after the
+    # fact.
+    first_fence = next((i for i, ex in enumerate(executables) if ex.kind == "fence"), -1)
     try:
         with Store() as store, allow_coercions(allow):
-            for ex in executables:
+            for idx, ex in enumerate(executables):
                 ex.start = len(store.commands)
                 groups_before = len(rec.groups)
                 rec.md = []
                 # Pad so tracebacks and SyntaxErrors carry article line numbers.
                 padded = "\n" * (ex.lineno - 1) + ex.code
+                page_load_token = _page_load_allowed.set(idx == first_fence)
                 try:
                     exec(compile(padded, _ARTICLE_FILENAME, "exec"), namespace)
                 except ArticleError as err:
@@ -523,6 +546,8 @@ def _execute(executables: list[_Executable], allow: bool) -> tuple[Store, list[_
                         _author_lineno(err, ex.lineno),
                         f"{type(err).__name__}: {err}",
                     ) from err
+                finally:
+                    _page_load_allowed.reset(page_load_token)
                 ex.end = len(store.commands)
                 ex.md = "\n\n".join(chunk for chunk in rec.md if chunk.strip())
                 if ex.kind == "inline":
@@ -702,6 +727,12 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
         if isinstance(part, _Prose) and part.scan
         for s in _scan_spans(part.text)
     ]
+    # A gm.onpageload block has already run by the time the reader meets the
+    # first span, so the document may consume what it defined. Seed the replay
+    # with its lines and check only the tail against the document, or every such
+    # reference would fail the gate as an unknown id.
+    page_lines = store.page_load or []
+    seeded = page_lines + commands
     with Store() as check:
         # Strict replay: auto-creating a missing Point/Scalar/Text here would
         # mask a define-before-use violation (the reader's engine would bind
@@ -709,16 +740,22 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
         # later definition), so unknown ids must fail the gate.
         auto_create_token = _auto_create_enabled.set(False)
         try:
-            parse_dsl(commands)
+            parse_dsl(seeded)
         except DslParseError as exc:
+            lineno = exc.lineno or 0
+            if lineno <= len(page_lines):
+                raise ArticleError(
+                    None,
+                    f"gm.onpageload() command {lineno} is not replayable: {exc}",
+                ) from exc
             raise ArticleError(
                 None,
                 f"compiled article failed the parse round-trip (command "
-                f"{exc.lineno} in document order): {exc}",
+                f"{lineno - len(page_lines)} in document order): {exc}",
             ) from exc
         finally:
             _auto_create_enabled.reset(auto_create_token)
-        replayed = emit(check).splitlines()
+        replayed = emit(check).splitlines()[len(page_lines) :]
     if replayed != commands:
         for i, (got, want) in enumerate(zip(replayed, commands)):
             if got != want:
@@ -734,11 +771,12 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
         )
 
     # -- off-tape snapshots --------------------------------------------------
-    # Harvest the session's gm.tex bindings and gm.ui.onclick handlers (both
-    # recorded off-tape) and embed them, after the round-trip gate so the DSL
-    # replay is never disturbed. Articles with neither are byte-for-byte
-    # unchanged. A handler's commands are deliberately absent from the gate:
-    # they run on a click, not in document order.
+    # Harvest the session's gm.tex bindings, gm.ui.onclick handlers and
+    # gm.onpageload commands (all recorded off-tape) and embed them, after the
+    # round-trip gate so the DSL replay is never disturbed. Articles with none
+    # of them are byte-for-byte unchanged. A handler's commands are deliberately
+    # absent from the gate: they run on a click, not in document order. The
+    # page-load commands are in it, as its seed — see above.
     tex_manifest = harvest_tex_bindings(store)
     if tex_manifest:
         compiled = _append_manifest(compiled, "texatlas:v1", tex_manifest)
@@ -750,6 +788,9 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
         raise ArticleError(None, str(exc)) from exc
     if click_manifest:
         compiled = _append_manifest(compiled, "onclick:v1", click_manifest)
+    page_manifest = harvest_page_load(store)
+    if page_manifest:
+        compiled = _append_manifest(compiled, "onpageload:v1", page_manifest)
     return compiled
 
 
