@@ -100,9 +100,8 @@ def test_macro_out_binds_last_body_command():
     try:
         with gm.Store() as st:
             a = gm.scalar(3)
-            d = gm.double(a, out="dbl")
-            assert d is st.nodes["dbl"]
-            gm.add(d, 1, out="more")
+            assert gm.double(a, out="dbl") is st.nodes["dbl"]
+            gm.add(st.nodes["dbl"], 1, out="more")
         assert gm.emit(st) == "a = \\scalar 3\ndbl = \\double a\nmore = \\add dbl 1"
     finally:
         gm.unload_macros("t-out")
@@ -195,8 +194,8 @@ def test_multiline_text_collapses_to_one_line():
 
 def test_multiline_implicit_text_collapses():
     with gm.Store() as st:
-        p = gm.point(0, 0, out="anchor")
-        gm.annotate_text_box("multi\r\n  line\nlabel", p)
+        anchor = gm.point(0, 0)
+        gm.annotate_text_box("multi\r\n  line\nlabel", anchor)
     emitted = gm.emit(st)
     assert '"multi line label"' in emitted
     assert all("\n" not in gm.render_command(c) for c in st.commands)

@@ -124,8 +124,7 @@ def test_infix_rejected_for_non_arithmetic_nodes():
 def test_identifier_validation():
     with pytest.raises(ValueError, match="underscores"):
         gm.point(1, 2, out="my_point")
-    p = gm.point(1, 2, out="fwd-traj0")
-    assert p.id == "fwd-traj0"
+    assert gm.point(1, 2, out="fwd-traj0").id == "fwd-traj0"
 
 
 def test_engine_auto_shaped_ids_rejected():

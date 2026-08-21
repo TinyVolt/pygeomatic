@@ -74,11 +74,11 @@ def test_same_name_reused_within_one_call():
 
 def test_existing_node_is_referenced_not_recreated():
     with gm.Store() as st:
-        p = gm.point(1, 2, out="pt")
+        pt = gm.point(1, 2)
         ln = gm.line("pt", "b")
         assert ln.p1.numeric == (1.0, 2.0)
         gm.distance("pt", "b", out="d")
-        assert st.nodes["pt"] is p  # still the original
+        assert st.nodes["pt"] is pt  # still the original
     assert gm.emit(st).splitlines() == [
         "pt = \\point 1 2",
         "ln = \\line pt b",
@@ -266,9 +266,9 @@ def test_macro_argument_existing_node_still_binds():
     gm.load_macros(SEG_MACRO, name="test:auto-create-2")
     try:
         with gm.Store() as st:
-            p = gm.point(1, 2, out="m")
+            m = gm.point(1, 2)
             gm.seg_between("m", "n")
-            assert st.nodes["m"] is p
+            assert st.nodes["m"] is m
         assert gm.emit(st).splitlines() == ["m = \\point 1 2", "\\seg-between m n"]
     finally:
         gm.unload_macros("test:auto-create-2")
