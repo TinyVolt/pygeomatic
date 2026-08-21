@@ -5,7 +5,7 @@ import pygeomatic as gm
 
 def test_emit_small_scene():
     with gm.Store() as s:
-        a = gm.point(1, 2, out="a")
+        a = gm.point(1, 2)
         b = gm.point(4, 6)
         gm.distance(a, b)
         c = gm.circle(a, 3)

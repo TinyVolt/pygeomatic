@@ -86,7 +86,7 @@ def test_variadic_emission(manifest):
 def test_output_properties_work(manifest):
     gm.load_extensions(manifest)
     with gm.Store() as s:
-        v = gm.la_vec2d(3, 4, out="v")
+        v = gm.la_vec2d(3, 4)
         gm.mid_point(v.p1, v.p2)
     lines = gm.emit(s).splitlines()
     assert lines[-1] == "p-0 = \\mid-point v.p1 v.p2"

@@ -80,7 +80,7 @@ def test_macro_body_uses_engine_auto_ids():
 
 def test_macro_with_node_argument():
     with gm.Store() as st:
-        loss = gm.scalar(4, out="loss")
+        loss = gm.scalar(4)
         gm.zero_back_step(loss)
     assert gm.emit(st) == "loss = \\scalar 4\n\\zero-back-step loss"
 
@@ -99,7 +99,7 @@ def test_macro_out_binds_last_body_command():
     gm.load_macros([{"macro": "double x", "commands": ["\\mul x 2"]}], name="t-out")
     try:
         with gm.Store() as st:
-            a = gm.scalar(3, out="a")
+            a = gm.scalar(3)
             d = gm.double(a, out="dbl")
             assert d is st.nodes["dbl"]
             gm.add(d, 1, out="more")
@@ -110,10 +110,10 @@ def test_macro_out_binds_last_body_command():
 
 def test_macro_arg_count_and_conflicts():
     with gm.Store() as st:
-        loss = gm.scalar(4, out="loss")
+        loss = gm.scalar(4)
         with pytest.raises(TypeError, match="takes 1 argument"):
             gm.zero_back_step(loss, loss)
-        n = gm.scalar(1, out="n")
+        n = gm.scalar(1)
         with pytest.raises(ValueError, match="conflicts with an internal macro variable"):
             gm.get_uniform_radian_angles(n)  # body assigns `n` itself
 

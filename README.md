@@ -161,7 +161,7 @@ $$
 $$
 
 ```pygeomatic
-b = gm.scalar(3, out="b")
+b = gm.scalar(3)
 energy = gm.tex("energy")         # matches %id:energy
 energy.int.upper.bind(b)          # show b's value in the upper limit
 ```
@@ -180,7 +180,7 @@ $$
 $$
 
 ```pygeomatic
-r = gm.scalar(0, out="r")
+r = gm.scalar(0)
 M = gm.tex("M")
 M.highlight(M.rows() == r, color="pink")   # row r
 M.triu().highlight(color="blue")           # upper triangle
@@ -237,7 +237,7 @@ soon as it's bound. To reveal it only after a reader clicks, scale its weight by
 a node that starts at `0`:
 
 ```python
-u = gm.scalar(0, out="u")               # 0 → highlight invisible
+u = gm.scalar(0)               # 0 → highlight invisible
 M.highlight((M.rows() == r).scale(u))   # weight = row-weight × u
 ```
 ```markdown
