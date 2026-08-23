@@ -134,15 +134,53 @@ def test_choice_defaults_to_the_first_option():
         assert f"{mode}".count("sum") >= 1
 
 
+def test_numeric_choice_records_a_scalar():
+    """An all-number list makes a Scalar node, like a plain gm.scalar — the
+    control adds no DSL of its own."""
+    with gm.Store() as s:
+        pick = gm.ui.radio([1, 2, 3], 2)
+    assert gm.emit(s).splitlines() == ["pick = \\scalar 2"]
+    assert s.ui_widgets["pick"]["kind"] == "radio"
+
+
+def test_numeric_choice_dsl_matches_a_plain_scalar():
+    """Presentation only: a numeric choice must emit exactly the plain scalar."""
+    with gm.Store() as with_ui:
+        pick = gm.ui.dropdown([1, 2, 3], 2)  # noqa: F841 — named for the DSL
+    with gm.Store() as without_ui:
+        pick = gm.scalar(2)  # noqa: F841 — same name so the DSL matches
+    assert gm.emit(with_ui) == gm.emit(without_ui)
+
+
+def test_string_choice_still_records_text():
+    """Regression: an all-string list keeps the Text behaviour."""
+    with gm.Store() as s:
+        mode = gm.ui.radio(["a", "b"])  # noqa: F841
+    assert gm.emit(s).splitlines() == ['mode = \\text "a"']
+
+
+def test_numeric_choice_html_carries_number_options():
+    with gm.Store():
+        pick = gm.ui.radio([1, 2, 3], 2, label="sides")
+        markup = f"{pick}"
+    assert 'data-kind="radio"' in markup
+    assert attr(markup, "options") == [1.0, 2.0, 3.0]
+    assert attr(markup, "initial-value") == 2.0
+    assert attr(markup, "label") == "sides"
+
+
 @pytest.mark.parametrize(
     "call, message",
     [
         (lambda: gm.ui.checkbox(1), "must be True or False"),
         (lambda: gm.ui.dropdown([]), "non-empty list"),
-        (lambda: gm.ui.dropdown([1, 2]), "must be strings"),
+        (lambda: gm.ui.dropdown([1, "a"]), "all strings or all numbers"),
+        (lambda: gm.ui.dropdown([True, False]), "all strings or all numbers"),
         (lambda: gm.ui.dropdown(["a", "a"]), "must be distinct"),
+        (lambda: gm.ui.radio([1, 1]), "must be distinct"),
         (lambda: gm.ui.dropdown(["a"], value="z"), "not one of the options"),
         (lambda: gm.ui.radio(["a"], value="z"), "not one of the options"),
+        (lambda: gm.ui.radio([1, 2], value=9), "not one of the options"),
         (lambda: gm.ui.number(5, 1), "stop > start"),
         (lambda: gm.ui.number(0, 10, value=99), "above stop"),
         (lambda: gm.ui.number(0, 10, value=-1), "below start"),
