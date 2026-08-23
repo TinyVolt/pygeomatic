@@ -266,37 +266,51 @@ def number(
     return node
 
 
-def _choice_options(options: Sequence[str], kind: str) -> list:
+def _choice_options(options: Sequence, kind: str) -> tuple[list, str]:
+    """Validate a choice's options and infer the node type they imply.
+
+    Returns `(choices, mode)` where `mode` is `"text"` for an all-string list
+    (the chosen option becomes a Text node's value) or `"scalar"` for an
+    all-number list (a Scalar node holding the chosen number). A `bool` is an
+    `int` subclass but belongs to `gm.ui.checkbox`, so it is rejected here.
+    """
     if not isinstance(options, (list, tuple)) or not options:
         raise UIError(f"gm.ui.{kind} needs a non-empty list of options")
-    out = []
-    for option in options:
-        if not isinstance(option, str):
-            raise UIError(
-                f"gm.ui.{kind} options must be strings, got {option!r}. The chosen "
-                "one becomes a Text node's value."
-            )
-        out.append(option)
-    if len(set(out)) != len(out):
+
+    if all(isinstance(o, str) for o in options):
+        choices, mode = list(options), "text"
+    elif all(isinstance(o, (int, float)) and not isinstance(o, bool) for o in options):
+        choices, mode = [float(o) for o in options], "scalar"
+    else:
+        raise UIError(
+            f"gm.ui.{kind} options must be all strings or all numbers, got "
+            f"{list(options)!r}. Strings make a Text node, numbers a Scalar node."
+        )
+
+    if len(set(choices)) != len(choices):
         raise UIError(
             f"gm.ui.{kind} options must be distinct — the node holds the chosen "
-            "text, so duplicates would be indistinguishable"
+            "one, so duplicates would be indistinguishable"
         )
-    return out
+    return choices, mode
 
 
 def _choice(kind: str, options, value, label):
+    from .functions.implementations.basic_figures import scalar
     from .functions.implementations.basic_figures import text as _text_node
 
-    choices = _choice_options(options, kind)
-    initial = choices[0] if value is None else value
+    choices, mode = _choice_options(options, kind)
+    if value is None:
+        initial = choices[0]
+    else:
+        initial = float(value) if mode == "scalar" else value
     if initial not in choices:
         raise UIError(
             f"gm.ui.{kind} value {initial!r} is not one of the options {choices!r}"
         )
     _check_label(label, kind)
 
-    node = _text_node(initial)
+    node = scalar(initial) if mode == "scalar" else _text_node(initial)
     _register(
         node,
         kind,
@@ -306,25 +320,29 @@ def _choice(kind: str, options, value, label):
 
 
 def dropdown(
-    options: Sequence[str],
-    value: Optional[str] = None,
+    options: Sequence[Union[str, float]],
+    value: Optional[Union[str, float]] = None,
     label: Optional[str] = None,
 ) -> "GNode":
-    """A drop-down of `options` driving a new Text node holding the chosen one.
+    """A drop-down of `options` driving a new node holding the chosen one.
 
-    Compare it with `gm.cond.eq(mode, "sum")` to gate prose on the choice.
+    An all-string list makes a Text node; an all-number list makes a Scalar
+    node, so `gm.ui.dropdown([1, 2], 1)` gives a number the canvas can use.
+    Compare it with `gm.cond.eq(mode, "sum")` or `gm.cond.eq(n, 1)` to gate
+    prose on the choice.
     """
     return _choice("dropdown", options, value, label)
 
 
 def radio(
-    options: Sequence[str],
-    value: Optional[str] = None,
+    options: Sequence[Union[str, float]],
+    value: Optional[Union[str, float]] = None,
     label: Optional[str] = None,
 ) -> "GNode":
-    """Radio buttons over `options`, driving a new Text node. Same as
-    `dropdown` but with every choice visible at once — better for two or three
-    options the reader should be able to see without clicking."""
+    """Radio buttons over `options`, driving a new node. Same as `dropdown` but
+    with every choice visible at once — better for two or three options the
+    reader should be able to see without clicking. An all-number list makes a
+    Scalar node, an all-string list a Text node."""
     return _choice("radio", options, value, label)
 
 
