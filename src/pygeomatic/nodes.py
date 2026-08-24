@@ -196,19 +196,29 @@ class GNode(BaseModel):
         return f"{self.type}(id={self.id!r})"
 
     def __format__(self, spec: str) -> str:
-        """Interpolating a node into a string yields its id — except when the
-        node carries a gm.ui control, in which case it yields that control's
-        HTML. This is the whole mechanism behind
+        """Interpolating a node into a string yields the *live thing*, in three
+        flavours. This is the whole mechanism behind
 
             r = gm.ui.slider(1, 5)
-            gm.md(f"Drag to resize: {r}")
+            gm.md(f"Drag to resize: {r}")          # the slider itself
+            gm.md(f"...and r is {r:d} right now")  # a live readout of r
+            gm.md(f"The side is {r * 2:.2f}")      # a live readout of a value
+
+        1. A node carrying a gm.ui control yields that control's HTML.
+        2. A value node (Scalar / Text / Bool) yields a *readout* — a span the
+           browser fills with the node's current value and refreshes whenever
+           it changes. A format spec forces this branch even for a control, so
+           an author can put a slider in one sentence and its number in the
+           next.
+        3. Anything else — a Circle, a Line, an Array — yields its id, since
+           there is nothing sensible to print. Ask for `node.id` explicitly
+           when you want the id of a value node.
 
         Kept on the base node (rather than on a widget subclass) so a widget
         stays an ordinary Scalar/Bool/Text and every function that accepts one
         keeps working untouched. Imports are local because `store` imports this
         module.
         """
-        del spec
         if not self.id:
             return repr(self)
         try:
@@ -220,11 +230,36 @@ class GNode(BaseModel):
             # store without the channel: fall back to the plain id rather than
             # breaking an f-string.
             return self.id
-        if widget is None:
-            return self.id
-        from .ui import render_widget_html
 
-        return render_widget_html(widget)
+        from .ui import FMT_RE, READOUT_TYPES, UIError, render_widget_html
+        from .store import IDENTIFIER_RE
+
+        if widget is not None and not spec:
+            return render_widget_html(widget)
+
+        if self.type not in READOUT_TYPES:
+            if spec:
+                raise UIError(
+                    f"{spec!r} is a number format, but {self.id!r} is a "
+                    f"{self.type} and interpolates to its id. Formats apply to "
+                    f"{'/'.join(sorted(READOUT_TYPES))} nodes."
+                )
+            return self.id
+
+        if not IDENTIFIER_RE.match(self.id):
+            # The id is written straight into an HTML attribute; an id that
+            # isn't a plain identifier can't be, so print it as text instead.
+            return self.id
+
+        if spec and not FMT_RE.match(spec):
+            raise UIError(
+                f"invalid format {spec!r} for {self.id!r}: use '.Nf' (fixed), "
+                "'.N%' (percent) or 'd' (round to a whole number)"
+            )
+
+        return render_widget_html(
+            {"kind": "readout", "node": self.id, "options": {"fmt": spec or None}}
+        )
 
 
 # ---------------------------------------------------------------------------

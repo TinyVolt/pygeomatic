@@ -48,6 +48,7 @@ from typing import Optional, Union
 
 from .nodes import GNode
 from .store import current_store
+from .ui import FMT_RE
 
 # ---------------------------------------------------------------------------
 # Errors
@@ -153,11 +154,9 @@ _register_builtin_schema()
 # Wire helpers
 # ---------------------------------------------------------------------------
 
-# Number formats the browser's `formatValue` implements: `.Nf` (fixed), `.N%`
-# (percent, value * 100 with a trailing sign), `d` (round to int). Keep in sync
-# with format.ts / CONTRACT.md — a format accepted here but unknown there falls
-# through to a raw `String(value)`.
-_FMT_RE = re.compile(r"\.\d+[f%]\Z|d\Z")
+# The one number-format grammar, shared with prose readouts (`f"{x:.2f}"`);
+# defined next to the readout renderer in ui.py.
+_FMT_RE = FMT_RE
 
 
 def _node_id(value: Union[GNode, str], *, what: str) -> str:
