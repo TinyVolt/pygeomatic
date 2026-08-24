@@ -198,10 +198,61 @@ def test_controls_reject_bad_options(call, message):
 # ---------------------------------------------------------------------------
 
 
-def test_plain_node_formats_to_its_id():
+def test_non_value_node_formats_to_its_id():
+    """A Circle has no value to print, so it stays an id."""
     with gm.Store():
         c = gm.circle(gm.p0, 2)
         assert f"{c}" == c.id
+
+
+@pytest.mark.parametrize(
+    "build",
+    [
+        lambda: gm.scalar(2),
+        lambda: gm.text("hello"),
+        lambda: gm.gt(gm.scalar(2), gm.scalar(1)),
+    ],
+    ids=["Scalar", "Text", "Bool"],
+)
+def test_value_node_formats_to_a_readout(build):
+    with gm.Store():
+        node = build()
+        markup = f"{node}"
+    assert markup.startswith('<span class="nova-ui"')
+    assert 'data-kind="readout"' in markup
+    assert f'data-node="{node.id}"' in markup
+    assert "data-fmt=" not in markup
+
+
+def test_readout_carries_the_format_spec():
+    with gm.Store():
+        x = gm.scalar(2)
+        assert attr(f"{x:.2f}", "fmt") == ".2f"
+        assert attr(f"{x:d}", "fmt") == "d"
+        assert attr(f"{x:.1%}", "fmt") == ".1%"
+
+
+def test_readout_rejects_a_format_outside_the_gm_tex_grammar():
+    with gm.Store():
+        x = gm.scalar(2)
+        with pytest.raises(UIError, match="invalid format"):
+            f"{x:%.2f}"
+
+
+def test_a_format_on_a_non_value_node_is_an_error():
+    """Silently printing the id would look like the format was applied."""
+    with gm.Store():
+        c = gm.circle(gm.p0, 2)
+        with pytest.raises(UIError, match="number format"):
+            f"{c:.2f}"
+
+
+def test_a_format_asks_for_the_value_of_a_control_node():
+    """`{r}` is the slider; `{r:d}` is its number, so both can share a page."""
+    with gm.Store():
+        r = gm.ui.slider(1, 5, value=3, label="radius")
+        assert 'data-kind="slider"' in f"{r}"
+        assert 'data-kind="readout"' in f"{r:d}"
 
 
 def test_widget_node_formats_to_its_html():
@@ -244,6 +295,48 @@ def test_hostile_label_survives_the_round_trip():
     for ch in ("<", ">", "$", "\\"):
         assert ch not in value, f"{ch!r} left unescaped in {value!r}"
     assert attr(markup, "label") == nasty
+
+
+# ---------------------------------------------------------------------------
+# Readouts in canvas text
+# ---------------------------------------------------------------------------
+
+
+def test_an_f_string_in_canvas_text_becomes_the_canvas_interpolation():
+    """The canvas draws plain text, so a span there would be painted as markup.
+    `${x}` is the canvas's own live interpolation and means the same thing."""
+    with gm.Store() as a:
+        x = gm.scalar(2)
+        gm.text(f"scale = {x}", out="t")
+    with gm.Store() as b:
+        x = gm.scalar(2)
+        gm.text("scale = ${x}", out="t")
+    assert gm.emit(a) == gm.emit(b)
+    assert 't = \\text "scale = ${x}"' in gm.emit(a)
+
+
+def test_a_control_in_canvas_text_is_rewritten_too():
+    with gm.Store() as s:
+        r = gm.ui.slider(1, 5, value=3, label="radius")
+        gm.text(f"r = {r}", out="t")
+    assert 't = \\text "r = ${r}"' in gm.emit(s)
+
+
+def test_an_implicit_text_argument_is_rewritten():
+    """Not just gm.text: every string reaching a Text parameter goes through
+    the same resolution step."""
+    with gm.Store() as s:
+        x = gm.scalar(2)
+        gm.annotate_text_box(f"x = {x}", 0, 0, 14, out="box")
+    assert 'text-0 = \\text "x = ${x}"' in gm.emit(s)
+
+
+def test_the_canvas_drops_a_number_format():
+    """`${}` has no format spec; the canvas prints integers plain, else 2 dp."""
+    with gm.Store() as s:
+        x = gm.scalar(2)
+        gm.text(f"x = {x:.1%}", out="t")
+    assert 't = \\text "x = ${x}"' in gm.emit(s)
 
 
 # ---------------------------------------------------------------------------

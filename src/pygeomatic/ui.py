@@ -39,6 +39,7 @@ reader clicks the node on the canvas.
 from __future__ import annotations
 
 import json
+import re
 from html import escape
 from typing import Optional, Sequence, Union
 
@@ -50,6 +51,19 @@ from .store import IDENTIFIER_RE, current_store
 class UIError(ValueError):
     """A gm.ui control could not be created (bad options, or a node that
     already has a control)."""
+
+
+# Node types that print their value when interpolated into an article string
+# (`gm.md(f"the side is {side}")`); everything else prints its id. See
+# `GNode.__format__`.
+READOUT_TYPES = frozenset({"Scalar", "Text", "Bool"})
+
+# Number formats the browser's `formatValue` implements: `.Nf` (fixed), `.N%`
+# (percent, value * 100 with a trailing sign), `d` (round to int). Keep in sync
+# with format.ts / CONTRACT.md — a format accepted here but unknown there falls
+# through to a raw `String(value)`. Shared by readouts and `gm.tex(...).bind`,
+# so an author learns one grammar.
+FMT_RE = re.compile(r"\.\d+[f%]\Z|d\Z")
 
 
 # ---------------------------------------------------------------------------

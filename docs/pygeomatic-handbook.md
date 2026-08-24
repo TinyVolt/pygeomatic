@@ -327,8 +327,11 @@ elements.
 **No LaTeX inside `gm.text`** — it renders plain text. Use Unicode glyphs
 directly (`λ₁`, `v₂`, `Mᵀ`, `V⁻¹`, `θ`), never `$...$` / `^{-1}` / `\lambda`.
 Reactive interpolation is allowed: `gm.text("scale = ${scale}")` updates live from
-the referenced node. (KaTeX *is* fine in article prose and in `{label}(...)` link
-labels — just not in `\text`.)
+the referenced node. An f-string means the same thing — `gm.text(f"scale = {scale}")`
+is rewritten to `${scale}` and emits the identical DSL — except that a number
+format is dropped, since `${}` has none: the canvas prints integers plain and
+everything else to 2 dp. (KaTeX *is* fine in article prose and in `{label}(...)`
+link labels — just not in `\text`.)
 
 ---
 

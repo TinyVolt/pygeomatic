@@ -90,18 +90,42 @@ same node raises `UIError`.
 
 ## 2. `__format__` is the only entry point
 
-`GNode.__format__` was added in this commit. Interpolating a node into a string
-yields its **id**, unless the node carries a control — then it yields the
-control's HTML:
+Interpolating a node into a string yields the **live thing**, in three flavours:
 
 ```python
-gm.md(f"Drag to resize the circle: {r}")
+r = gm.ui.slider(1, 5)
+side = r * 2
+
+gm.md(f"Drag to resize the circle: {r}")   # 1. the control's HTML
+gm.md(f"The side is {side:.2f} units.")    # 2. a readout of the value
+gm.md(f"{gm.circle(gm.p0, r)}")            # 3. an id — a Circle has no value
 ```
 
+1. **A control**, when the node carries one.
+2. **A readout** for a `Scalar` / `Text` / `Bool` (`ui.READOUT_TYPES`) — a
+   `data-kind="readout"` span the browser fills with the node's current value
+   and refreshes whenever it changes. It rides the same wire as a control but
+   *shows* a node instead of driving one, and nothing is registered on
+   `Store.ui_widgets` for it: the branch is chosen from the node's type at
+   format time, so it never consumes the one-control-per-node slot.
+3. **The id**, for every other type. `node.id` asks for the id explicitly.
+
+A format spec (`f"{x:.2f}"`, `.N%`, `d` — `ui.FMT_RE`, the grammar
+`gm.tex(...).bind(fmt=)` also takes) forces the readout branch, so a slider can
+appear in one sentence and its number in the next. A format on a node that has
+no value raises `UIError` rather than quietly printing an id.
+
 It lives on the base `GNode` rather than on a widget subclass, precisely so a
-widget stays an ordinary `Scalar`/`Bool`/`Text`. With no active store (a bare
-node built outside `with Store()`), it falls back to the plain id rather than
-breaking the f-string.
+widget stays an ordinary `Scalar`/`Bool`/`Text`. An id that isn't a plain
+identifier falls back to being printed as text, since the id is written straight
+into an HTML attribute.
+
+**A readout in canvas text is translated, not rejected.** The canvas draws plain
+text, so `gm.text(f"scale = {x}")` would paint the markup. `_resolve_arg` in
+`registry.py` rewrites any `nova-ui` span in a `Text` argument to the canvas's
+own live interpolation, `${x}`, so the f-string and `gm.text("scale = ${x}")`
+emit identical DSL. A number format is dropped on that path: `${}` has no format
+spec, and the canvas prints integers plain and everything else to 2 dp.
 
 The rendered element is always **one line** — markdown treats an indented line as
 a code block, and an f-string inside an indented triple-quoted `gm.md(...)` would

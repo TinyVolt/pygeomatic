@@ -26,6 +26,7 @@ Argument coercions (each keeps emission deterministic):
 from __future__ import annotations
 
 import random
+import re
 import sys
 from dataclasses import dataclass, field as dc_field
 from functools import wraps
@@ -191,6 +192,32 @@ def _deref_name(fdef: FunctionDef, p: P, arg: Any, store: Store) -> Any:
     return _auto_create(name, p.type, store)
 
 
+# A gm.ui span, as `render_widget_html` writes it: `class`, `data-kind` and
+# `data-node` are always first and always unescaped, so this stays a simple
+# pattern. Readouts and controls both match — both carry `data-node`.
+_UI_SPAN_RE = re.compile(
+    r'<span class="nova-ui" data-kind="[^"]*" data-node="([a-zA-Z][a-zA-Z0-9-]*)"[^>]*></span>'
+)
+
+
+def _spans_to_interpolation(value: str) -> str:
+    """Turn gm.ui spans in canvas text into the canvas's own `${node}` form.
+
+    `GNode.__format__` builds a readout span wherever a value node is
+    interpolated, which is right for prose but not for `gm.text`: the canvas
+    draws plain text and would paint the markup literally. It has its own live
+    interpolation, so translate rather than reject —
+
+        gm.text(f"scale = {x}")  ==  gm.text("scale = ${x}")
+
+    both emit `\\text "scale = ${x}"` and both track `x` on the canvas.
+
+    A number format is lost on the way (`${}` has no format spec): the canvas
+    prints integers plain and everything else to 2 dp.
+    """
+    return _UI_SPAN_RE.sub(r"${\g<1>}", value)
+
+
 def _implicit_text(value: str, store: Store) -> Text:
     node = Text._new(value)
     node_id = store.allocate_id("Text", None)
@@ -238,7 +265,7 @@ def _resolve_arg(fdef: FunctionDef, p: P, arg: Any, store: Store) -> tuple[ArgTo
             # The DSL is line-based and SVG <text> is single-line: newlines
             # can neither be emitted nor rendered, so collapse them now (the
             # node's value must match what goes on the tape).
-            arg = sanitize_text(arg)
+            arg = _spans_to_interpolation(sanitize_text(arg))
             if fdef.keyword == "text":
                 return TextLit(arg), arg
             node = _implicit_text(arg, store)
