@@ -120,8 +120,13 @@ def filter_(array, mask):
     if not (isinstance(array, Array) and isinstance(mask, Array)):
         raise TypeError("filter: both arguments must be Arrays")
     arr_shape = array._shape
-    rank = len(arr_shape)
     mask_shape = mask._shape
+    if arr_shape is None or mask_shape is None:
+        # Without both shapes there is no axis to filter along and no way to
+        # check broadcast compatibility. The output length depends on the mask's
+        # values, so it is unknown even when the input shape is not.
+        return Array._new(element_type=array._element_type, elements=[], shape_unknown=True)
+    rank = len(arr_shape)
     if len(mask_shape) > rank:
         raise ValueError(f"filter: mask rank {len(mask_shape)} exceeds array rank {rank}")
     padded = (1,) * (rank - len(mask_shape)) + tuple(mask_shape)
@@ -137,8 +142,11 @@ def filter_(array, mask):
             raise ValueError("filter: mask is not broadcast-compatible with array")
 
     mask_vals = [fbool(el) for el in mask._elements]
-    if any(v is None for v in mask_vals):
-        raise ValueError("filter: mask contains unknown Bool values")
+    if len(mask_vals) != mask._length() or any(v is None for v in mask_vals):
+        # Which elements survive depends on the mask's values. Not knowing them
+        # is not a bad mask — the engine has them — so record and leave the
+        # output shape unknown rather than rejecting the scene.
+        return Array._new(element_type=array._element_type, elements=[], shape_unknown=True)
 
     if filter_axis == -1:
         if mask_vals and mask_vals[0]:

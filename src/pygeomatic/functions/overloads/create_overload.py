@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from typing import Callable, Optional, Sequence
 
-from ...nodes import Array, Complex, GNode, Scalar
+from ...nodes import Array, Complex, GNode, Scalar, Unknown
 from ...registry import P, geomatic_fn
-from ..helpers import fcomplex, fnum
+from ..helpers import broadcast_shapes, fcomplex, fnum
 
 CATEGORY = "Overloaded Functions"
 OPERAND_TYPES = ["Scalar", "Complex"]
@@ -62,9 +62,30 @@ def apply_overload(
     complex_out: str,
     values: Sequence,
 ) -> GNode:
+    # An operand of unknown type may be an Array (making the result an Array) or
+    # a scalar. Collapsing it to a Scalar here would be a guess.
+    if any(isinstance(v, Unknown) for v in values):
+        return Unknown._new()
+
     arrays = [v for v in values if isinstance(v, Array)]
     if not arrays:
         return _apply_flat(scalar_fn, complex_fn, complex_out, values)
+
+    # Output shape is the NumPy broadcast of the operand shapes, as the engine
+    # computes it (broadcasting.ts:11) — not the first operand's shape.
+    shape = broadcast_shapes([a._shape for a in arrays])
+
+    # Elementwise values need every operand's elements laid out along the
+    # broadcast shape. Record the command with the shape alone when any operand
+    # is missing its elements, or when a real broadcast (rather than a plain
+    # same-shape pairing) would be required to line them up.
+    if shape is None or any(
+        a._shape != shape or len(a._elements) != a._length() for a in arrays
+    ):
+        return Array._new(
+            element_type=None, elements=[], shape=shape, shape_unknown=shape is None
+        )
+
     n = len(arrays[0]._elements)
     columns = [_elements_or_self(v, n) for v in values]
     elements = [
@@ -72,7 +93,7 @@ def apply_overload(
         for i in range(n)
     ]
     element_type = elements[0].type if elements else "Scalar"
-    return Array._new(element_type=element_type, elements=elements, shape=arrays[0]._shape)
+    return Array._new(element_type=element_type, elements=elements, shape=shape)
 
 
 def unary_overload(

@@ -66,7 +66,10 @@ _NO_INFIX_MSG = (
 _infix_call: ContextVar[bool] = ContextVar("pygeomatic_infix_call", default=False)
 
 # Operand kinds the arithmetic overload commands (`\add`, `\mul`, ...) accept.
-_ARITHMETIC_NODES = ("Scalar", "Complex", "Array")
+# `Unknown` is in the list because refusing infix on a node whose type we simply
+# failed to determine would be an error raised from ignorance — the engine knows
+# the real type and will reject it there if it is not arithmetic.
+_ARITHMETIC_NODES = ("Scalar", "Complex", "Array", "Unknown")
 
 
 def _is_arithmetic_operand(v) -> bool:
@@ -426,6 +429,30 @@ class Dummy(GNode):
         return cls()
 
 
+class Unknown(GNode):
+    """A node whose TYPE pygeomatic could not determine.
+
+    Produced when a command's output type depends on values or shapes Python
+    does not have — `\\reduce-sum` on a record-only array, for instance, where
+    Scalar-vs-Array turns on the input's rank (tensor-functions.ts:118-127).
+
+    It is not a guess and not an error: the command is recorded, the emitted DSL
+    is unaffected, and the engine — which has the real values — computes the
+    real node. `registry._resolve_gnode` therefore lets it satisfy any parameter
+    slot, so a correct scene is never rejected by a type pygeomatic invented.
+    """
+
+    type: ClassVar[str] = "Unknown"
+
+    @classmethod
+    def _new(cls) -> "Unknown":
+        return cls()
+
+    @property
+    def numeric(self) -> None:
+        return None
+
+
 # ---------------------------------------------------------------------------
 # Composite geometric nodes
 # ---------------------------------------------------------------------------
@@ -654,31 +681,56 @@ class Polygon(GNode):
 
 
 class Array(GNode):
+    """An array node. Three facts are tracked independently, and any of them may
+    be unknown without the others being unknown:
+
+    - ``_shape``  — ``None`` when pygeomatic does not know the shape. This is
+      NOT the same as ``(0,)``, which means a genuinely empty array. Conflating
+      the two is what made a record-only extension output read as empty.
+    - ``_element_type`` — ``None`` when the element type is unknown.
+    - ``_elements`` — may be empty while the shape is known (the shape says how
+      many elements the engine will have; Python just has none of their values).
+    """
+
     type: ClassVar[str] = "Array"
-    _element_type: str = PrivateAttr(default="Scalar")
+    _element_type: Optional[str] = PrivateAttr(default="Scalar")
     _elements: list[GNode] = PrivateAttr(default_factory=list)
-    _shape: tuple[int, ...] = PrivateAttr(default=())
+    _shape: Optional[tuple[int, ...]] = PrivateAttr(default=None)
 
     @classmethod
     def _new(
         cls,
-        element_type: str = "Scalar",
+        element_type: Optional[str] = "Scalar",
         elements: Optional[list[GNode]] = None,
         shape: Optional[tuple[int, ...]] = None,
+        shape_unknown: bool = False,
     ) -> "Array":
+        """`shape` defaults to `(len(elements),)`; pass `shape_unknown=True` for
+        an array whose shape Python cannot know (a record-only output)."""
         n = cls()
         n._element_type = element_type
         n._elements = list(elements or [])
-        n._shape = tuple(shape) if shape is not None else (len(n._elements),)
+        if shape_unknown:
+            n._shape = None
+        else:
+            n._shape = tuple(shape) if shape is not None else (len(n._elements),)
         return n
+
+    def _length(self) -> Optional[int]:
+        """Element count from the shape, or None when the shape is unknown."""
+        if self._shape is None:
+            return None
+        return int(np.prod(self._shape)) if self._shape else 1
 
     @property
     def length(self) -> Scalar:
-        return Scalar._new(len(self._elements))._as_prop(self, "length")  # type: ignore[return-value]
+        return Scalar._new(self._length())._as_prop(self, "length")  # type: ignore[return-value]
 
     @property
     def numeric(self) -> Optional[np.ndarray]:
         """Element values as an ndarray of self.shape (None if any is unknown)."""
+        if self._shape is None:
+            return None
         vals = []
         for el in self._elements:
             v = getattr(el, "numeric", None)
@@ -686,7 +738,8 @@ class Array(GNode):
                 return None
             vals.append(v)
         if not vals:
-            return np.array([]).reshape(self._shape)
+            # No values in hand. Only a genuinely empty array has none to have.
+            return np.array([]).reshape(self._shape) if self._length() == 0 else None
         return np.array(vals).reshape(
             self._shape if self._element_type != "Point" else (*self._shape, 2)
         )
@@ -695,9 +748,23 @@ class Array(GNode):
         """Record-time element count (a plain int; records no command).
 
         Enables `for k in range(len(arr)): arr[k]` loops that unroll into
-        commands. Record-only arrays (extension outputs) report 0.
+        commands.
+
+        Raises when the length is unknown. This is the one place pygeomatic must
+        refuse rather than shrug: `len()` and `for el in arr:` decide how many
+        commands get emitted, so quietly answering 0 would drop the author's
+        loop body from the DSL instead of leaving the decision to the engine.
         """
-        return len(self._elements)
+        n = self._length()
+        if n is None:
+            raise TypeError(
+                f"length of array {self.id or '<unnamed>'} is unknown at record "
+                "time, so `len()` and `for ... in` cannot unroll it into "
+                "commands — the loop body would silently emit nothing. Index it "
+                "with a Scalar, or declare the output shape in the extension "
+                "manifest."
+            )
+        return n
 
     def __getitem__(self, key):
         """`arr[i]` records `\\get-array-element arr i` (i: int or Scalar).
@@ -715,12 +782,15 @@ class Array(GNode):
         if isinstance(key, (int, np.integer)) and not isinstance(key, bool):
             key = int(key)
             if key < 0:
-                if not self._elements:
+                # The engine has no negative indexing, so the emitted argument
+                # depends on the length — refuse rather than emit a wrong index.
+                n = self._length()
+                if not n:
                     raise IndexError(
                         f"cannot normalize negative index {key}: array length "
                         "is unknown at record time"
                     )
-                key %= len(self._elements)
+                key %= n
         elif not isinstance(key, Scalar):
             raise TypeError(
                 f"array index must be an int or a Scalar node, got {type(key).__name__!r}"
@@ -735,8 +805,9 @@ class Array(GNode):
 
     def __iter__(self):
         # BaseModel.__iter__ yields pydantic fields; iterate elements instead,
-        # recording one \get-array-element per element.
-        for k in range(len(self._elements)):
+        # recording one \get-array-element per element. `len(self)` raises when
+        # the length is unknown rather than silently yielding nothing.
+        for k in range(len(self)):
             yield self[k]
 
 
@@ -965,6 +1036,7 @@ NODE_PROPERTIES: dict[str, dict[str, str]] = {
 }
 
 NODE_CLASSES: dict[str, type[GNode]] = {
+    "Unknown": Unknown,
     "Text": Text,
     "Bool": Bool,
     "Point": Point,

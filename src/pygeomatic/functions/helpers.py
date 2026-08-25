@@ -58,9 +58,19 @@ def ftext(t) -> Optional[str]:
 
 
 def scalar_array(values: Optional[Sequence[float]], shape=None) -> Array:
-    """Array node of Scalar elements from numeric values (None → unknown array)."""
+    """Array node of Scalar elements from numeric values.
+
+    `values=None` means the VALUES are unknown, which says nothing about the
+    shape: pass `shape` whenever the caller knows it (most operations preserve
+    their input's shape) so it survives the unknown-value path.
+    """
     if values is None:
-        return Array._new(element_type="Scalar", elements=[], shape=shape or (0,))
+        return Array._new(
+            element_type="Scalar",
+            elements=[],
+            shape=shape,
+            shape_unknown=shape is None,
+        )
     els: list[GNode] = [Scalar._new(v) for v in values]
     return Array._new(element_type="Scalar", elements=els, shape=shape or (len(els),))
 
@@ -69,8 +79,45 @@ def point_array(points: Sequence[Point]) -> Array:
     return Array._new(element_type="Point", elements=list(points), shape=(len(points),))
 
 
+def broadcast_shapes(shapes: Sequence[Optional[tuple[int, ...]]]) -> Optional[tuple[int, ...]]:
+    """Mirror of `broadcastShapes` (functions/broadcasting.ts:11).
+
+    NumPy rules: align right-to-left; each pair of dims must be equal or one of
+    them must be 1. Returns None when any input shape is unknown — the result
+    shape is then unknowable, which is not the same as a mismatch.
+    """
+    if any(s is None for s in shapes):
+        return None
+    known = [tuple(s) for s in shapes if s is not None]
+    if not known:
+        return None
+    rank = max(len(s) for s in known)
+    result: list[int] = []
+    for i in range(rank):
+        out = 1
+        for s in known:
+            pad = rank - len(s)
+            dim = 1 if i < pad else s[i - pad]
+            if dim != 1 and out != 1 and dim != out:
+                raise ValueError(
+                    f"Array broadcast shape mismatch: cannot broadcast "
+                    f"dimension {out} with {dim}"
+                )
+            if dim != 1:
+                out = dim
+        result.append(out)
+    return tuple(result)
+
+
 def array_values(arr) -> Optional[np.ndarray]:
-    """Flat numeric values of an Array of Scalars; None when unknown."""
+    """Flat numeric values of an Array of Scalars; None when unknown.
+
+    An array with no elements returns values only when it is GENUINELY empty
+    (a known shape holding zero elements). A record-only array has no elements
+    because Python has no values for them, not because it has none — returning
+    `np.array([])` for it is what let callers compute on a fabricated empty
+    array (`sum([]) == 0.0`) instead of taking their unknown-value branch.
+    """
     if not isinstance(arr, Array):
         return None
     vals = []
@@ -79,6 +126,8 @@ def array_values(arr) -> Optional[np.ndarray]:
         if v is None:
             return None
         vals.append(v)
+    if not vals and arr._length() != 0:
+        return None
     return np.array(vals)
 
 

@@ -119,8 +119,13 @@ def _resolve_gnode(fdef: FunctionDef, p: P, arg: GNode) -> list[tuple[ArgToken, 
     element_type = _DISPATCH_TYPE.get(element_type, element_type) if element_type else element_type
     if p.type == "Any" or node_type == p.type:
         return [(arg.ref, arg)]
+    # A node whose type pygeomatic could not determine satisfies every slot.
+    # Rejecting it would be a type error invented from missing values, and the
+    # emitted DSL is identical either way — the engine does the real checking.
+    if node_type == "Unknown":
+        return [(arg.ref, arg)]
     if node_type == "Array":
-        if element_type == p.type or (
+        if element_type is None or element_type == p.type or (
             coercions_enabled() and (element_type, p.type) in VALUE_COERCIONS
         ):
             return [(arg.ref, arg)]
