@@ -33,6 +33,9 @@ def _rotate_point(p: Point, center: tuple[float, float], angle_rad: float) -> No
     params=[P("obj", "Any"), P("center", "Point"), P("angle", "Scalar")],
     category=CATEGORY,
     imperative=True,
+    # rotation-functions.ts:302 — one of the five commands that broadcast
+    # imperatively: an Array `obj` is rotated element by element.
+    broadcasts=True,
 )
 def rotate(obj, center, angle):
     c = fxy(center)

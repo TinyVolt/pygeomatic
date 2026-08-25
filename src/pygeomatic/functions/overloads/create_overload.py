@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from typing import Callable, Optional, Sequence
 
-from ...nodes import Array, Complex, GNode, Scalar
+from ...nodes import Array, Complex, GNode, Scalar, Unknown
 from ...registry import P, geomatic_fn
 from ..helpers import fcomplex, fnum
 
@@ -46,33 +46,24 @@ def _apply_flat(
     return Scalar._new(result)
 
 
-def _elements_or_self(v, n: int) -> list:
-    if isinstance(v, Array):
-        if len(v._elements) != n:
-            raise ValueError(
-                f"operand arrays must have matching lengths ({len(v._elements)} vs {n})"
-            )
-        return list(v._elements)
-    return [v] * n
-
-
 def apply_overload(
     scalar_fn: Callable,
     complex_fn: Callable,
     complex_out: str,
     values: Sequence,
 ) -> GNode:
-    arrays = [v for v in values if isinstance(v, Array)]
-    if not arrays:
-        return _apply_flat(scalar_fn, complex_fn, complex_out, values)
-    n = len(arrays[0]._elements)
-    columns = [_elements_or_self(v, n) for v in values]
-    elements = [
-        _apply_flat(scalar_fn, complex_fn, complex_out, [col[i] for col in columns])
-        for i in range(n)
-    ]
-    element_type = elements[0].type if elements else "Scalar"
-    return Array._new(element_type=element_type, elements=elements, shape=arrays[0]._shape)
+    """Apply the operator to a single set of operands.
+
+    Array operands never reach here: the overloads are ordinary registered
+    commands, so `registry._try_broadcast` has already sliced them and calls
+    this once per element — the same `tryBroadcast` wrapper the scalar and
+    complex kernels carry in scalar-functions.ts and complex-functions.ts.
+    """
+    # An operand of unknown type may be an Array (making the result an Array) or
+    # a scalar. Collapsing it to a Scalar here would be a guess.
+    if any(isinstance(v, Unknown) for v in values):
+        return Unknown._new()
+    return _apply_flat(scalar_fn, complex_fn, complex_out, values)
 
 
 def unary_overload(

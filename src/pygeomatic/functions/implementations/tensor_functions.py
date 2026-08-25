@@ -6,23 +6,34 @@ from typing import Callable, Optional
 
 import numpy as np
 
-from ...nodes import Array, Point, Scalar
+from ...nodes import Array, Point, Scalar, Unknown
 from ...registry import P, geomatic_fn
 from ..helpers import array_values, fint, fnum, scalar_array
 
 CATEGORY = "Tensor Functions"
 
+# Nothing in this file broadcasts: every function here is defined over a whole
+# array, not element-wise. tensor-functions.ts imports only `flatToNd` from
+# ../broadcasting — never `tryBroadcast` — so each decorator below passes
+# `broadcasts=False`.
+
 
 def _nd_values(array: Array) -> Optional[np.ndarray]:
     flat = array_values(array)
-    if flat is None:
+    if flat is None or array._shape is None:
         return None
     return flat.reshape(array._shape)
 
 
 def _reduce(keyword: str, name: str, fn: Callable[[np.ndarray, Optional[int]], np.ndarray]):
     """reduce-*: dim=-1 (default) reduces all elements → Scalar; otherwise
-    reduces along `dim` → Array (or Scalar for a 1-D input)."""
+    reduces along `dim` → Array (or Scalar for a 1-D input).
+
+    The output TYPE is decided from the input's shape and `dim` alone, never
+    from its values — mirroring tensor-functions.ts:118-127, which builds an
+    Array only when `outShape.length > 0` and otherwise falls through to a
+    Scalar. Values are computed separately, and only when they are available.
+    """
 
     @geomatic_fn(
         keyword=keyword,
@@ -30,18 +41,34 @@ def _reduce(keyword: str, name: str, fn: Callable[[np.ndarray, Optional[int]], n
         output="Any",
         params=[P("array", "Array"), P("dim", "Scalar", default=-1)],
         category=CATEGORY,
+        broadcasts=False,
     )
     def impl(array, dim):
-        vals = _nd_values(array)
         d = fint(dim)
-        if vals is None:
-            return Scalar._new(None)
-        if d is None or d == -1 or vals.ndim <= 1:
-            return Scalar._new(fn(vals.ravel(), None))
-        if d < 0 or d >= vals.ndim:
-            raise ValueError(f"{keyword}: dim {d} out of range for rank-{vals.ndim} array")
-        out = fn(vals, d)
-        return scalar_array(np.ravel(out), shape=out.shape)
+        shape = array._shape if isinstance(array, Array) else None
+        vals = _nd_values(array)
+
+        # `dim` came from a node with no value: it could be -1 (Scalar out) or a
+        # real axis (Array out). Both the shape and the type are undecidable.
+        if d is None:
+            return Unknown._new()
+
+        if d != -1:
+            if shape is None:
+                # Scalar-vs-Array turns on the rank, which we do not have.
+                return Unknown._new()
+            rank = len(shape)
+            if d < 0 or d >= rank:
+                raise ValueError(f"{keyword}: dim {d} out of range for rank-{rank} array")
+            out_shape = shape[:d] + shape[d + 1 :]
+            if out_shape:
+                if vals is None:
+                    return scalar_array(None, shape=out_shape)
+                out = fn(vals, d)
+                return scalar_array(np.ravel(out), shape=out.shape)
+            # 1-D array reduced along its only dim → Scalar (as in the engine).
+
+        return Scalar._new(None if vals is None else fn(vals.ravel(), None))
 
     impl.__name__ = keyword.replace("-", "_")
     return impl
@@ -62,13 +89,15 @@ reduce_var = _reduce("reduce-var", "ReduceVar", lambda v, d: np.var(v, axis=d))
     output="Array",
     params=[P("array", "Array")],
     category=CATEGORY,
+    broadcasts=False,
 )
 def softmax(array):
     vals = array_values(array)
+    shape = array._shape if isinstance(array, Array) else None
     if vals is None:
-        return scalar_array(None)
+        return scalar_array(None, shape=shape)  # softmax preserves shape
     exps = np.exp(vals)
-    return scalar_array(np.divide(exps, np.sum(exps)))
+    return scalar_array(np.divide(exps, np.sum(exps)), shape=shape)
 
 
 @geomatic_fn(
@@ -77,12 +106,24 @@ def softmax(array):
     output="Array",
     params=[P("array", "Array"), P("dim", "Scalar", variadic=True)],
     category=CATEGORY,
+    broadcasts=False,
 )
 def reshape(array, dims):
     raw = [fint(d) for d in dims]
     if any(d is None for d in raw):
-        raise ValueError("reshape: dimensions must be numeric")
-    count = len(array._elements)
+        # A dim from a valueless node: the target shape is genuinely unknown.
+        return Array._new(element_type=array._element_type, elements=[], shape_unknown=True)
+    count = array._length()
+    if count is None:
+        # Element count unknown, so numpy cannot validate the dims (and a `-1`
+        # cannot be resolved). Take the author's dims when they are concrete.
+        shape = tuple(raw) if -1 not in raw else None
+        return Array._new(
+            element_type=array._element_type,
+            elements=[],
+            shape=shape,
+            shape_unknown=shape is None,
+        )
     shape = np.empty(count).reshape(raw).shape  # numpy validates, incl. one -1
     return Array._new(element_type=array._element_type, elements=list(array._elements), shape=shape)
 
@@ -97,12 +138,18 @@ def reshape(array, dims):
         P("n", "Scalar", default=10),
     ],
     category=CATEGORY,
+    broadcasts=False,
 )
 def linspace(start, end, n):
     s, e, count = fnum(start), fnum(end), fint(n)
-    count = max(1, count if count is not None else 10)
-    if s is None or e is None:
+    if count is None:
+        # `n` is a node with no value. Substituting the default 10 here emitted
+        # ten real numbers with nothing marking them as invented; the length is
+        # simply unknown, which makes the shape unknown too.
         return scalar_array(None)
+    count = max(1, count)
+    if s is None or e is None:
+        return scalar_array(None, shape=(count,))  # length known, values not
     return scalar_array(np.linspace(s, e, count))
 
 
@@ -112,12 +159,14 @@ def linspace(start, end, n):
     output="Array",
     params=[P("array", "Array")],
     category=CATEGORY,
+    broadcasts=False,
 )
 def cumsum(array):
     vals = array_values(array)
+    shape = array._shape if isinstance(array, Array) else None
     if vals is None:
-        return scalar_array(None)
-    return scalar_array(np.cumsum(vals), shape=array._shape)
+        return scalar_array(None, shape=shape)  # cumsum preserves shape
+    return scalar_array(np.cumsum(vals), shape=shape)
 
 
 @geomatic_fn(
@@ -130,6 +179,7 @@ def cumsum(array):
         P("step", "Scalar", default=1),
     ],
     category=CATEGORY,
+    broadcasts=False,
 )
 def arange(start, end, step):
     s, e, st = fnum(start), fnum(end), fnum(step)
@@ -146,9 +196,15 @@ def arange(start, end, step):
     output="Array",
     params=[P("n", "Scalar", default=10), P("r", "Scalar", default=1)],
     category=CATEGORY,
+    broadcasts=False,
 )
 def circular_arange(n, r):
-    count = max(1, fint(n) or 10)
+    count = fint(n)
+    if count is None:
+        # Unknown `n`: `or 10` invented ten points (and turned a real n=0 into
+        # ten). Without the count there is no shape and no element list.
+        return Array._new(element_type="Point", elements=[], shape_unknown=True)
+    count = max(1, count)
     radius = fnum(r)
     angles = np.divide(np.multiply(2 * np.pi, np.arange(count)), count)
     pts = [
@@ -173,15 +229,23 @@ def _filled(keyword: str, name: str, fill: float, like: bool):
         output="Array",
         params=params,
         category=CATEGORY,
+        broadcasts=False,
     )
     def impl(arg):
         if like:
             shape = arg._shape if isinstance(arg, Array) else (1,)
         else:
             count = fint(arg)
-            if count is None or count < 1:
+            if count is None:
+                # `n` is a valueless node — not a bad `n`. The engine will read
+                # its real value; refusing here would reject a valid scene.
+                return scalar_array(None)
+            if count < 1:
                 raise ValueError(f"{keyword}: n must be a positive integer")
             shape = (count,)
+        if shape is None:
+            return scalar_array(None)
+        # Every element is `fill`, so a known shape is enough to know the values.
         return scalar_array(np.full(shape, fill).ravel(), shape=shape)
 
     impl.__name__ = keyword.replace("-", "_")

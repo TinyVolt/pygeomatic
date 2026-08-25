@@ -75,6 +75,7 @@ def translate_array(array, dx, dy):
     params=[P("obj", "Any"), P("dx", "Scalar"), P("dy", "Scalar")],
     category=CATEGORY,
     imperative=True,
+    broadcasts=True,  # translation-functions.ts:214, applyImperativeBroadcast
 )
 def translate(obj, dx, dy):
     _translate_node(obj, fnum(dx), fnum(dy))

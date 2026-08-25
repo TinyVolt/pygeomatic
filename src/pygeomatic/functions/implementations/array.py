@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ...nodes import Array, GNode, Scalar
+from ...nodes import NODE_CLASSES, Array, GNode, Scalar, Unknown
 from ...registry import P, geomatic_fn
 from ..helpers import fint, fnum
 
@@ -15,6 +15,9 @@ CATEGORY = "Arrays"
     output="Array",
     params=[P("element1", "Any", variadic=True)],
     category=CATEGORY,
+    # array.ts:38 has its `tryBroadcast` deliberately commented out — an Array
+    # argument becomes an ELEMENT of the new array, it is not iterated over.
+    broadcasts=False,
 )
 def array(elements):
     els: list[GNode] = []
@@ -30,13 +33,32 @@ def array(elements):
     output="Any",
     params=[P("array", "Array"), P("index", "Scalar")],
     category=CATEGORY,
+    broadcasts=False,  # array.ts: indexes the array, does not iterate it
 )
 def get_array_element(arr, index):
     i = fint(index)
-    if not isinstance(arr, Array) or i is None:
-        return Scalar._new(None)
-    if i < 0 or i >= len(arr._elements):
-        raise IndexError(f"get-array-element: index {i} out of range for length {len(arr._elements)}")
+    if not isinstance(arr, Array):
+        return Unknown._new()
+    if i is None:
+        # A valueless index (a slider, say). Which element is unknown, but the
+        # element TYPE need not be.
+        return _empty_element(arr._element_type)
+    n = arr._length()
+    if n is None:
+        # Length unknown: the index cannot be range-checked, and the element
+        # type may be unknown too. Record the command and let the engine index.
+        return _empty_element(arr._element_type)
+    if i < 0 or i >= n:
+        raise IndexError(f"get-array-element: index {i} out of range for length {n}")
+    if i >= len(arr._elements):
+        # The shape says this element exists; Python just has no value for it.
+        return _empty_element(arr._element_type)
     # The DSL assigns the element to a NEW node id — clone so the output node
     # gets its own identity without re-referencing the source element.
     return arr._elements[i].model_copy()
+
+
+def _empty_element(element_type) -> GNode:
+    """A valueless node of `element_type`, or Unknown when even that is unknown."""
+    cls = NODE_CLASSES.get(element_type) if element_type else None
+    return cls._new() if cls is not None else Unknown._new()  # type: ignore[attr-defined]

@@ -32,7 +32,8 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Callable, ClassVar, Optional
 
-from .nodes import GNode, NODE_CLASSES
+from .functions.helpers import broadcast_shapes
+from .nodes import Array, GNode, NODE_CLASSES
 from .prompting import python_name
 from .registry import P, REGISTRY, UNSET, geomatic_fn
 from .store import IDENTIFIER_RE
@@ -152,6 +153,12 @@ def _custom_node_class(type_name: str) -> type[GNode]:
 
 def _output_factory(output_type: str) -> Callable[[], GNode]:
     cls = NODE_CLASSES.get(output_type) or _custom_node_class(output_type)
+    if output_type == "Array":
+        # The manifest declares only the TYPE. pygeomatic never runs the
+        # extension's compute, so it has neither the elements nor the shape —
+        # and an Array defaulting to shape (0,) would read as a genuinely empty
+        # array, which is how a record-only output ended up being "summed" to 0.
+        return lambda: Array._new(element_type=None, elements=[], shape_unknown=True)
     new = getattr(cls, "_new", None)
     if callable(new):
         return lambda: new()
@@ -166,9 +173,26 @@ def _pkg():
 
 def _register_one(spec: dict, source: str) -> str:
     keyword = spec["keyword"]
-    factory = _output_factory(spec["output_type"])
+    output_type = spec["output_type"]
+    factory = _output_factory(output_type)
 
     def _impl(*bound):
+        # The engine wraps every extension compute in `tryBroadcastAsync`
+        # (ExtensionAdapter.ts:375,467): if ANY input is an Array it runs the
+        # compute per element and returns an Array of the broadcast shape,
+        # whatever the manifest's declared outputType says. Taking the declared
+        # type literally is what made `\prob-normal-cdf` over arrays read as a
+        # single Scalar.
+        args = [a for arg in bound for a in (arg if isinstance(arg, (list, tuple)) else [arg])]
+        arrays = [a for a in args if isinstance(a, Array)]
+        if arrays:
+            shape = broadcast_shapes([a._shape for a in arrays])
+            return Array._new(
+                element_type=output_type,
+                elements=[],
+                shape=shape,
+                shape_unknown=shape is None,
+            )
         return factory()
 
     _impl.__name__ = python_name(keyword)

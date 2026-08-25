@@ -50,6 +50,7 @@ def evaluate_polynomial(poly, x):
     params=[P("pointId", "Any", variadic=True)],
     category=CATEGORY,
     imperative=True,
+    broadcasts=True,  # curve-functions.ts:156, applyImperativeBroadcast
 )
 def trail(point_ids):
     return Dummy._new()
