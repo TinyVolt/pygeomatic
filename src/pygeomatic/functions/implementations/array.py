@@ -15,6 +15,9 @@ CATEGORY = "Arrays"
     output="Array",
     params=[P("element1", "Any", variadic=True)],
     category=CATEGORY,
+    # array.ts:38 has its `tryBroadcast` deliberately commented out — an Array
+    # argument becomes an ELEMENT of the new array, it is not iterated over.
+    broadcasts=False,
 )
 def array(elements):
     els: list[GNode] = []
@@ -30,6 +33,7 @@ def array(elements):
     output="Any",
     params=[P("array", "Array"), P("index", "Scalar")],
     category=CATEGORY,
+    broadcasts=False,  # array.ts: indexes the array, does not iterate it
 )
 def get_array_element(arr, index):
     i = fint(index)

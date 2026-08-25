@@ -79,6 +79,36 @@ def point_array(points: Sequence[Point]) -> Array:
     return Array._new(element_type="Point", elements=list(points), shape=(len(points),))
 
 
+def flat_to_nd(flat_idx: int, shape: Sequence[int]) -> list[int]:
+    """Mirror of `flatToNd` (functions/broadcasting.ts:31). Row-major."""
+    nd = [0] * len(shape)
+    remaining = flat_idx
+    for i in range(len(shape) - 1, -1, -1):
+        nd[i] = remaining % shape[i]
+        remaining //= shape[i]
+    return nd
+
+
+def nd_to_flat_clamped(nd_idx: Sequence[int], input_shape: Sequence[int], rank: int) -> int:
+    """Mirror of `ndToFlatClamped` (functions/broadcasting.ts:46).
+
+    Converts an output index into a flat index into `input_shape`, which is
+    left-padded with 1s to `rank`. An axis whose input dim is 1 contributes 0 —
+    that is the stretching a broadcast does.
+    """
+    pad = rank - len(input_shape)
+    strides = [0] * rank
+    stride = 1
+    for i in range(rank - 1, -1, -1):
+        strides[i] = stride
+        stride *= 1 if i < pad else input_shape[i - pad]
+    flat = 0
+    for i in range(rank):
+        dim = 1 if i < pad else input_shape[i - pad]
+        flat += (0 if dim == 1 else nd_idx[i]) * strides[i]
+    return flat
+
+
 def broadcast_shapes(shapes: Sequence[Optional[tuple[int, ...]]]) -> Optional[tuple[int, ...]]:
     """Mirror of `broadcastShapes` (functions/broadcasting.ts:11).
 

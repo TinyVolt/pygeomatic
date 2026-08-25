@@ -37,27 +37,30 @@ def backprop(node):
     return Dummy._new()
 
 
+def _reject_array_target(target, param_node):
+    """The target is validated OUTSIDE the broadcast, as the engine arranges it
+    (autograd-functions.ts:126-133): jax grad needs a scalar output, so an Array
+    target is rejected rather than sliced — which guarantees the broadcast can
+    only ever slice the param."""
+    if isinstance(target, Array):
+        raise TypeError("\\partial: target (first argument) must be a Scalar, got an Array")
+
+
 @geomatic_fn(
     keyword="partial",
     name="Partial",
     output="Any",
     params=[P("target", "Scalar"), P("param", "Any")],
     category=CATEGORY,
+    pre_broadcast=_reject_array_target,
 )
 def partial_derivative(target, param_node):
     # Computes the partial derivative of `target` w.r.t. `param` (NOT
     # functools.partial). Emits `\partial`.
-    # Mirrors the engine: an Array param broadcasts element-wise into an Array
-    # of gradient nodes (PointGradient for Point-like elements, ScalarGradient
-    # otherwise). Target must be a single Scalar (engine-enforced).
-    if isinstance(param_node, Array):
-        cls = (
-            PointGradient
-            if param_node._element_type in ("Point", "PointGradient")
-            else ScalarGradient
-        )
-        elements = [cls._new() for _ in param_node._elements]
-        return Array._new(cls.type, elements, param_node._shape)
+    #
+    # An Array param broadcasts element-wise into an Array of gradient nodes
+    # (PointGradient for Point-like elements, ScalarGradient otherwise). That
+    # is handled centrally, so this body only ever sees a single param.
     if isinstance(param_node, Point):
         return PointGradient._new(None, None)
     return ScalarGradient._new(None)

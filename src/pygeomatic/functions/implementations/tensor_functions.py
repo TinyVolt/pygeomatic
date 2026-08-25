@@ -12,6 +12,11 @@ from ..helpers import array_values, fint, fnum, scalar_array
 
 CATEGORY = "Tensor Functions"
 
+# Nothing in this file broadcasts: every function here is defined over a whole
+# array, not element-wise. tensor-functions.ts imports only `flatToNd` from
+# ../broadcasting — never `tryBroadcast` — so each decorator below passes
+# `broadcasts=False`.
+
 
 def _nd_values(array: Array) -> Optional[np.ndarray]:
     flat = array_values(array)
@@ -36,6 +41,7 @@ def _reduce(keyword: str, name: str, fn: Callable[[np.ndarray, Optional[int]], n
         output="Any",
         params=[P("array", "Array"), P("dim", "Scalar", default=-1)],
         category=CATEGORY,
+        broadcasts=False,
     )
     def impl(array, dim):
         d = fint(dim)
@@ -83,6 +89,7 @@ reduce_var = _reduce("reduce-var", "ReduceVar", lambda v, d: np.var(v, axis=d))
     output="Array",
     params=[P("array", "Array")],
     category=CATEGORY,
+    broadcasts=False,
 )
 def softmax(array):
     vals = array_values(array)
@@ -99,6 +106,7 @@ def softmax(array):
     output="Array",
     params=[P("array", "Array"), P("dim", "Scalar", variadic=True)],
     category=CATEGORY,
+    broadcasts=False,
 )
 def reshape(array, dims):
     raw = [fint(d) for d in dims]
@@ -130,6 +138,7 @@ def reshape(array, dims):
         P("n", "Scalar", default=10),
     ],
     category=CATEGORY,
+    broadcasts=False,
 )
 def linspace(start, end, n):
     s, e, count = fnum(start), fnum(end), fint(n)
@@ -150,6 +159,7 @@ def linspace(start, end, n):
     output="Array",
     params=[P("array", "Array")],
     category=CATEGORY,
+    broadcasts=False,
 )
 def cumsum(array):
     vals = array_values(array)
@@ -169,6 +179,7 @@ def cumsum(array):
         P("step", "Scalar", default=1),
     ],
     category=CATEGORY,
+    broadcasts=False,
 )
 def arange(start, end, step):
     s, e, st = fnum(start), fnum(end), fnum(step)
@@ -185,6 +196,7 @@ def arange(start, end, step):
     output="Array",
     params=[P("n", "Scalar", default=10), P("r", "Scalar", default=1)],
     category=CATEGORY,
+    broadcasts=False,
 )
 def circular_arange(n, r):
     count = fint(n)
@@ -217,6 +229,7 @@ def _filled(keyword: str, name: str, fill: float, like: bool):
         output="Array",
         params=params,
         category=CATEGORY,
+        broadcasts=False,
     )
     def impl(arg):
         if like:

@@ -113,6 +113,9 @@ def xor(a, b):
     output="Array",
     params=[P("array", "Array"), P("mask", "Array")],
     category=CATEGORY,
+    # The only function in boolean-functions.ts without `tryBroadcast`: it
+    # aligns the mask against the whole array rather than iterating it.
+    broadcasts=False,
 )
 def filter_(array, mask):
     """Filter along the single non-trivial mask axis (NumPy-style broadcast

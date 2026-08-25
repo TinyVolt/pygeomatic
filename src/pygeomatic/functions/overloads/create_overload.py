@@ -13,7 +13,7 @@ from typing import Callable, Optional, Sequence
 
 from ...nodes import Array, Complex, GNode, Scalar, Unknown
 from ...registry import P, geomatic_fn
-from ..helpers import broadcast_shapes, fcomplex, fnum
+from ..helpers import fcomplex, fnum
 
 CATEGORY = "Overloaded Functions"
 OPERAND_TYPES = ["Scalar", "Complex"]
@@ -46,54 +46,24 @@ def _apply_flat(
     return Scalar._new(result)
 
 
-def _elements_or_self(v, n: int) -> list:
-    if isinstance(v, Array):
-        if len(v._elements) != n:
-            raise ValueError(
-                f"operand arrays must have matching lengths ({len(v._elements)} vs {n})"
-            )
-        return list(v._elements)
-    return [v] * n
-
-
 def apply_overload(
     scalar_fn: Callable,
     complex_fn: Callable,
     complex_out: str,
     values: Sequence,
 ) -> GNode:
+    """Apply the operator to a single set of operands.
+
+    Array operands never reach here: the overloads are ordinary registered
+    commands, so `registry._try_broadcast` has already sliced them and calls
+    this once per element — the same `tryBroadcast` wrapper the scalar and
+    complex kernels carry in scalar-functions.ts and complex-functions.ts.
+    """
     # An operand of unknown type may be an Array (making the result an Array) or
     # a scalar. Collapsing it to a Scalar here would be a guess.
     if any(isinstance(v, Unknown) for v in values):
         return Unknown._new()
-
-    arrays = [v for v in values if isinstance(v, Array)]
-    if not arrays:
-        return _apply_flat(scalar_fn, complex_fn, complex_out, values)
-
-    # Output shape is the NumPy broadcast of the operand shapes, as the engine
-    # computes it (broadcasting.ts:11) — not the first operand's shape.
-    shape = broadcast_shapes([a._shape for a in arrays])
-
-    # Elementwise values need every operand's elements laid out along the
-    # broadcast shape. Record the command with the shape alone when any operand
-    # is missing its elements, or when a real broadcast (rather than a plain
-    # same-shape pairing) would be required to line them up.
-    if shape is None or any(
-        a._shape != shape or len(a._elements) != a._length() for a in arrays
-    ):
-        return Array._new(
-            element_type=None, elements=[], shape=shape, shape_unknown=shape is None
-        )
-
-    n = len(arrays[0]._elements)
-    columns = [_elements_or_self(v, n) for v in values]
-    elements = [
-        _apply_flat(scalar_fn, complex_fn, complex_out, [col[i] for col in columns])
-        for i in range(n)
-    ]
-    element_type = elements[0].type if elements else "Scalar"
-    return Array._new(element_type=element_type, elements=elements, shape=shape)
+    return _apply_flat(scalar_fn, complex_fn, complex_out, values)
 
 
 def unary_overload(

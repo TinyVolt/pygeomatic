@@ -32,9 +32,12 @@ from dataclasses import dataclass, field as dc_field
 from functools import wraps
 from typing import Any, Callable, Optional, Sequence
 
+import numpy as np
+
 from .coercions import NODE_COERCIONS, VALUE_COERCIONS, coerce_gnode, coercions_enabled
+from .functions.helpers import broadcast_shapes, flat_to_nd, nd_to_flat_clamped
 from .inference import infer_out_names
-from .nodes import Bool, GNode, Point, Scalar, Text, _infix_call
+from .nodes import Array, Bool, Dummy, GNode, Point, Scalar, Text, _infix_call
 
 # Variadic + associative commands whose anonymous infix intermediates may be
 # folded into one line (`d = a + b + c` → `d = \add a b c`).
@@ -83,6 +86,10 @@ class FunctionDef:
     is_async: bool = False
     is_macro: bool = False
     operand_types: Optional[list[str]] = None
+    # Whether an Array argument makes this function run element-wise. Mirrors
+    # each TS implementation's `tryBroadcast(inner, inputs) ?? inner(inputs)`
+    # (declarative) or `applyImperativeBroadcast` (imperative) opt-in.
+    broadcasts: bool = True
     py_func: Optional[Callable] = dc_field(default=None, repr=False)
 
 
@@ -457,6 +464,142 @@ def _bind(
 
 
 # ---------------------------------------------------------------------------
+# Broadcasting (mirror of functions/broadcasting.ts)
+# ---------------------------------------------------------------------------
+
+
+def _flatten_bound(fdef: FunctionDef, bound: list) -> list:
+    """The bound arguments as a flat list. A variadic function's tail arrives as
+    a single list in the last slot."""
+    if fdef.params and fdef.params[-1].variadic and bound and isinstance(bound[-1], list):
+        return [*bound[:-1], *bound[-1]]
+    return list(bound)
+
+
+def _rebuild_bound(fdef: FunctionDef, flat: list) -> list:
+    """Inverse of `_flatten_bound`: re-nest the variadic tail."""
+    if fdef.params and fdef.params[-1].variadic:
+        fixed = len(fdef.params) - 1
+        return [*flat[:fixed], list(flat[fixed:])]
+    return list(flat)
+
+
+def _slot_element(value, nd_idx, rank):
+    """One broadcast slot's value: an Array contributes its clamped element,
+    anything else passes through unchanged (broadcasting.ts:101-105)."""
+    if not isinstance(value, Array):
+        return value
+    return value._elements[nd_to_flat_clamped(nd_idx, value._shape or (), rank)]
+
+
+def _broadcast_plan(fdef: FunctionDef, bound: list):
+    """(flat args, array args, out_shape) when this call broadcasts, else None.
+
+    Mirrors `tryBroadcast`'s entry test: ANY Array input triggers it, whatever
+    the declared parameter type — an Array in a Scalar slot included.
+    """
+    if not fdef.broadcasts:
+        return None
+    flat = _flatten_bound(fdef, bound)
+    arrays = [v for v in flat if isinstance(v, Array)]
+    if not arrays:
+        return None
+    return flat, arrays, broadcast_shapes([a._shape for a in arrays])
+
+
+def _unknown_broadcast_result(fdef: FunctionDef, out_shape) -> Array:
+    """The output when its shape or its elements are unknown: record the
+    command, keep whatever shape we do have, invent nothing."""
+    element_type = fdef.output_type if fdef.output_type not in ("Any", "Dummy") else None
+    return Array._new(
+        element_type=element_type,
+        elements=[],
+        shape=out_shape,
+        shape_unknown=out_shape is None,
+    )
+
+
+def _try_broadcast(fdef: FunctionDef, fn: Callable, bound: list) -> Optional[GNode]:
+    """Run `fn` once per element over the broadcast shape, assembling an Array.
+
+    Mirror of `tryBroadcast` (broadcasting.ts:83) — including that the element
+    type comes from the FIRST element's result rather than `fdef.output_type`.
+
+    `fn` is the raw implementation, never another command's wrapper, so calling
+    it per element records nothing on the tape: the implementations reach for
+    module-private helpers (`_project`, `_line_intersection`, …) rather than
+    registered functions. That is what makes per-element evaluation safe.
+    """
+    plan = _broadcast_plan(fdef, bound)
+    if plan is None:
+        return None
+    flat, arrays, out_shape = plan
+
+    # No shape, or an Array whose elements Python does not have (a record-only
+    # extension output): there is nothing to iterate over.
+    if out_shape is None or any(len(a._elements) != a._length() for a in arrays):
+        return _unknown_broadcast_result(fdef, out_shape)
+
+    rank = len(out_shape)
+    total = int(np.prod(out_shape)) if out_shape else 1
+    elements: list[GNode] = []
+    for k in range(total):
+        nd_idx = flat_to_nd(k, out_shape)
+        args = [_slot_element(v, nd_idx, rank) for v in flat]
+        result = fn(*_rebuild_bound(fdef, args))
+        if not isinstance(result, GNode):
+            raise TypeError(
+                f"\\{fdef.keyword}: implementation must return a node to broadcast, "
+                f"got {type(result)!r}"
+            )
+        elements.append(result)
+
+    element_type = elements[0].type if elements else fdef.output_type
+    return Array._new(element_type=element_type, elements=elements, shape=out_shape)
+
+
+class _NotBroadcast:
+    """Sentinel: this call did not broadcast, so run `fn` normally."""
+
+
+def _try_imperative_broadcast(fdef: FunctionDef, fn: Callable, bound: list):
+    """Mirror of `applyImperativeBroadcast` (broadcasting.ts:197).
+
+    Calls `fn` once per broadcast slot for its side effects. Unlike the
+    declarative version this builds NO Array — the engine returns early with a
+    dummy and the mutated nodes are the whole point.
+
+    Returns `_NotBroadcast` when there was nothing to broadcast. Otherwise it
+    returns the node this command should hand back: pygeomatic's mutating
+    commands (`\\rotate`, `\\translate`) return the object they mutated, which
+    shows up as the implementation returning its own first argument — so return
+    the whole Array in that case, and the last per-element result (a Dummy, for
+    the record-only stubs) in every other.
+    """
+    plan = _broadcast_plan(fdef, bound)
+    if plan is None:
+        return _NotBroadcast
+    flat, arrays, out_shape = plan
+    first = bound[0] if bound else None
+    if out_shape is None or any(len(a._elements) != a._length() for a in arrays):
+        # Nothing to iterate over here; the engine still mutates the real
+        # elements, and the command is recorded either way.
+        return first if isinstance(first, GNode) else fn(*bound)
+
+    rank = len(out_shape)
+    result = None
+    returned_its_argument = False
+    for k in range(int(np.prod(out_shape)) if out_shape else 1):
+        nd_idx = flat_to_nd(k, out_shape)
+        args = _rebuild_bound(fdef, [_slot_element(v, nd_idx, rank) for v in flat])
+        result = fn(*args)
+        returned_its_argument = bool(args) and result is args[0]
+    if returned_its_argument and isinstance(first, GNode):
+        return first
+    return result if isinstance(result, GNode) else Dummy._new()
+
+
+# ---------------------------------------------------------------------------
 # The decorator
 # ---------------------------------------------------------------------------
 
@@ -472,14 +615,31 @@ def geomatic_fn(
     is_async: bool = False,
     assigns_output: Optional[bool] = None,
     operand_types: Optional[list[str]] = None,
+    broadcasts: Optional[bool] = None,
+    pre_broadcast: Optional[Callable] = None,
     register: bool = True,
 ):
     """Register a geomatic command mirror.
 
     `assigns_output` overrides the default "declarative commands get an output
     id, imperative ones don't" (e.g. `\\copy` is imperative but assigns).
+
+    `broadcasts` overrides the default "declarative commands run element-wise
+    over an Array argument, imperative ones don't". In the engine every
+    declarative implementation opts in with
+    `tryBroadcast(inner, inputs) ?? inner(inputs)`; the exceptions are the
+    operations defined over a whole array (`\\array`, `\\get-array-element`,
+    `\\fft`, `\\ifft`, `\\filter` and everything in tensor-functions.ts), which
+    pass `broadcasts=False`. Five imperative commands DO broadcast via
+    `applyImperativeBroadcast` and pass `broadcasts=True`.
+
+    `pre_broadcast` validates the arguments BEFORE any slicing happens, for the
+    checks the engine deliberately runs outside its `tryBroadcast` call — see
+    `\\partial`, whose target must be rejected as a whole rather than sliced
+    into scalars (autograd-functions.ts:126-133).
     """
     assigns = (not imperative) if assigns_output is None else assigns_output
+    does_broadcast = (not imperative) if broadcasts is None else broadcasts
 
     def deco(fn: Callable) -> Callable:
         fdef = FunctionDef(
@@ -491,13 +651,23 @@ def geomatic_fn(
             is_imperative=imperative,
             is_async=is_async,
             operand_types=operand_types,
+            broadcasts=does_broadcast,
         )
 
         @wraps(fn)
         def wrapper(*args, out: Optional[str] = None, **kwargs):
             store = current_store()
             tokens, bound = _bind(fdef, tuple(args), kwargs, store)
-            result = fn(*bound)
+            if pre_broadcast is not None:
+                pre_broadcast(*bound)
+            if imperative:
+                result = _try_imperative_broadcast(fdef, fn, bound)
+                if result is _NotBroadcast:
+                    result = fn(*bound)
+            else:
+                result = _try_broadcast(fdef, fn, bound)
+                if result is None:
+                    result = fn(*bound)
             if assigns:
                 node = result if isinstance(result, GNode) else None
                 if node is None:

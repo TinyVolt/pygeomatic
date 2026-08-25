@@ -99,6 +99,9 @@ def _complex_array(values: np.ndarray) -> Array:
     output="Array",
     params=[P("array", "Array")],
     category=CATEGORY,
+    # complex-functions.ts:357 "Intentionally no tryBroadcast: an FFT is
+    # defined over the whole array."
+    broadcasts=False,
 )
 def fft(array):
     vals = _complex_values(array)
@@ -113,6 +116,7 @@ def fft(array):
     output="Array",
     params=[P("array", "Array")],
     category=CATEGORY,
+    broadcasts=False,  # complex-functions.ts:381, same reason as \fft
 )
 def ifft(array):
     vals = _complex_values(array)

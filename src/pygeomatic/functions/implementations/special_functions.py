@@ -107,6 +107,7 @@ def help_(node_id):
     params=[P("node", "Any"), P("stroke", "Text")],
     category=CATEGORY,
     imperative=True,
+    broadcasts=True,  # special-functions.ts:362, applyImperativeBroadcast
 )
 def set_stroke(node, stroke):
     return Dummy._new()
@@ -119,6 +120,7 @@ def set_stroke(node, stroke):
     params=[P("node", "Any"), P("fill", "Text")],
     category=CATEGORY,
     imperative=True,
+    broadcasts=True,  # special-functions.ts:412, applyImperativeBroadcast
 )
 def set_fill(node, fill):
     return Dummy._new()
