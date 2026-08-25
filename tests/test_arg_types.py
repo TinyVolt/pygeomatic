@@ -96,6 +96,24 @@ def test_keyword_node_default_hole_rejected():
             gm.circle(radius=3)
 
 
+def test_omitted_node_id_default_reaches_the_body_as_a_node():
+    """A trailing `default="p0"` names the origin NODE, not the string "p0".
+
+    Left as a bare string it silently defeated every implementation that read
+    it — `\\distance p` computed None instead of the distance from the origin.
+    """
+    with gm.Store() as st:
+        p = gm.point(3, 4, out="p")
+        assert gm.distance(p).numeric == 5.0
+        assert gm.circle(out="c")._center.numeric == (0.0, 0.0)
+        assert gm.ellipse(out="e")._center.numeric == (0.0, 0.0)
+        assert gm.square(out="sq")._vertices[0].numeric == (0.0, 0.0)
+    # Resolving a default must not put it on the tape.
+    lines = gm.emit(st).splitlines()
+    assert "c = \\circle" in lines
+    assert any(line.endswith("= \\distance p") for line in lines)
+
+
 # --- acceptances: broadcasting, coercions, Any ------------------------------
 
 

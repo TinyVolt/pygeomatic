@@ -144,6 +144,21 @@ def _resolve_gnode(fdef: FunctionDef, p: P, arg: GNode) -> list[tuple[ArgToken, 
     )
 
 
+def _default_value(fdef: FunctionDef, p: P, store: Store) -> Any:
+    """A parameter's default, as the BODY should see it.
+
+    Numeric and Text defaults are values. A string default on any other
+    parameter type is a NODE ID (`\\circle`'s `center="p0"`, `\\distance`'s
+    `point2="p0"`) and must be resolved to that node — the engine resolves
+    defaults through the same path as supplied arguments
+    (CommandExecutor.getInputNodeIds), and every such default in the registry
+    names `p0`, which every store seeds.
+    """
+    if isinstance(p.default, str) and p.type != "Text":
+        return _deref_name(fdef, p, p.default, store)
+    return p.default
+
+
 # Node types a missing id may be auto-created as (CommandExecutor.ts
 # createAndSaveNode: Point / Scalar / Text only).
 _AUTO_CREATE_TYPES = frozenset({"Point", "Scalar", "Text"})
@@ -433,8 +448,13 @@ def _bind(
             bound.append(val)
         else:
             # Trailing omission → not on the tape; the engine applies the same
-            # default. Node-id defaults ('p0') reach the body as the raw string.
-            bound.append(p.default)
+            # default. It still has to reach the BODY as the thing it names,
+            # though: a node-id default ('p0') left as a bare string made every
+            # implementation see a str where it expected a node and quietly
+            # compute nothing — `gm.distance(p)` returned None instead of the
+            # distance from the origin. Resolving here changes no emitted DSL,
+            # since nothing is appended to `tokens`.
+            bound.append(_default_value(fdef, p, store))
 
     if variadic:
         p = params[-1]
