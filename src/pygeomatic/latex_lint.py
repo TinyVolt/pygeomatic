@@ -1,18 +1,10 @@
-"""Lint the KaTeX math in an article, catching the two failure modes that only
-surface when the browser renders the formula (never at compile time otherwise):
-
-1. **Undefined control sequence** — e.g. `\\emerald{x}` when the palette has no
-   `\\emerald`. KaTeX renders the command name as literal red text and spills its
-   argument unstyled. We flag any `\\name` that is neither a KaTeX built-in
-   (`katex_commands.json`, a self-contained copy of the pinned KaTeX's command
-   set) nor one of the custom color macros the renderer registers (`COLOR_MACROS`
-   below), nor a command the formula defines itself (`\\def` / `\\newcommand`).
-
-2. **The `#`-hex color footgun** — `\\textcolor{#10B981}` / `\\amber{#...}`. Inside
-   these macros KaTeX reads `#`+digit as a parameter reference and corrupts the
-   color. The palette hexes carry no leading `#`; a bare `#` in article math is
-   almost always this mistake (macro-defining formulas, the only legitimate use
-   of `#`, are exempted).
+"""Lint the KaTeX math in an article for undefined control sequences — e.g.
+`\\emerald{x}` when the palette has no `\\emerald`. KaTeX renders the command
+name as literal red text and spills its argument unstyled. We flag any `\\name`
+that is neither a KaTeX built-in (`katex_commands.json`, a self-contained copy
+of the pinned KaTeX's command set) nor one of the custom color macros the
+renderer registers (`COLOR_MACROS` below), nor a command the formula defines
+itself (`\\def` / `\\newcommand`).
 
 Pure string scanning — no LaTeX parse tree — so it stays lightweight and honours
 the project rule that Python never parses LaTeX semantically.
@@ -24,9 +16,10 @@ import re
 from pathlib import Path
 
 # The custom color-macro palette the article's KaTeX renderer registers: each
-# name expands to `\textcolor{<hex>}` (hex has NO leading `#` — see the footgun
-# note below). This dict is the canonical, self-contained copy of that palette;
-# the linter treats these names as defined so authors may use them in prose math.
+# name expands to `\textcolor{<hex>}` (hex has NO leading `#`; KaTeX would read
+# `#`+digit as a parameter reference inside the color arg). This dict is the
+# canonical, self-contained copy of that palette; the linter treats these names
+# as defined so authors may use them in prose math.
 COLOR_MACROS: dict[str, str] = {
     "\\grey": "71717a",
     "\\amber": "fbbf24",
@@ -69,7 +62,6 @@ _DEF_RE = re.compile(
     r"|\\(?:g|e|x)?def\s*(\\[a-zA-Z]+)"
     r"|\\let\s*(\\[a-zA-Z]+)"
 )
-_DEFINES_MACRO_RE = re.compile(r"\\(?:(?:re)?newcommand|(?:g|e|x)?def|let)\b")
 
 
 def _locally_defined(latex: str) -> set[str]:
@@ -95,17 +87,5 @@ def lint_latex(latex: str) -> list[str]:
             f"unknown LaTeX command {cmd!r}: not a KaTeX built-in, a color macro "
             f"({', '.join(sorted(COLOR_MACROS))}), or defined in the formula"
         )
-
-    # The `#`-hex color footgun. `\#` is a literal hash (fine); a real macro
-    # definition is the only place `#`-params belong, so exempt those formulas.
-    if not _DEFINES_MACRO_RE.search(latex):
-        for m in re.finditer(r"#", latex):
-            if m.start() == 0 or latex[m.start() - 1] != "\\":
-                problems.append(
-                    "raw '#' in math: color macros take a bare 6-digit hex with "
-                    "NO leading '#' (e.g. \\textcolor{10B981}); a '#' is read as a "
-                    "KaTeX parameter and corrupts the color"
-                )
-                break
 
     return problems

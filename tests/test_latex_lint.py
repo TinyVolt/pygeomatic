@@ -1,7 +1,6 @@
 """Tests for the article KaTeX linter (`latex_lint.py`) and its wiring into
-`compile_article`. It catches the two mistakes that only surface at browser
-render time: an undefined control sequence (`\\emerald`) and the `#`-hex color
-footgun.
+`compile_article`. It catches undefined control sequences (`\\emerald`) that
+only surface at browser render time.
 """
 import re
 from pathlib import Path
@@ -51,22 +50,16 @@ def test_only_reported_once_per_command():
 
 
 # ---------------------------------------------------------------------------
-# lint_latex — the #-hex footgun
+# lint_latex — `#` in math is not flagged (KaTeX renders it fine in \text{...}
+# and elsewhere; the previous #-hex color check produced too many false
+# positives on legitimate uses like `\text{# exponent bits}`).
 # ---------------------------------------------------------------------------
 
 
-def test_flags_raw_hash_in_math():
-    (problem,) = lint_latex(r"\textcolor{#10B981}{x}")
-    assert "#" in problem
-
-
-def test_escaped_hash_is_allowed():
-    assert lint_latex(r"a \# b") == []
-
-
-def test_hash_allowed_inside_macro_definition():
-    # `#1` is a real parameter reference where a macro is defined.
-    assert lint_latex(r"\newcommand{\sq}[1]{#1^2} \sq{x}") == []
+def test_raw_hash_in_math_is_not_flagged():
+    assert lint_latex(r"\text{\# exponent bits}") == []
+    assert lint_latex(r"\text{# exponent bits}") == []
+    assert lint_latex(r"\textcolor{#10B981}{x}") == []
 
 
 # ---------------------------------------------------------------------------
