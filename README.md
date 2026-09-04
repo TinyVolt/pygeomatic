@@ -89,6 +89,7 @@ the engine's last-write-wins `saveNode`.
 | `grid-origin` | `(0, 0)` | Where the world origin sits on the canvas, in world units (`(0, 0)` = centered). Reassign to pan the view. |
 | `T` | `true` | The boolean literal `true`, referenceable wherever a Bool argument is expected. |
 | `F` | `false` | The boolean literal `false`, referenceable wherever a Bool argument is expected. |
+| `with-numeric-mode` | `false` | Whether the canvas math runs on plain numbers instead of tensors. Set it (`with_numeric_mode = gm.bool_(True)`) for a scene that wants the speed and computes no gradients — gradient commands stop working while it is on. Resets to false on a fresh canvas and on `\clear`. |
 
 ```python
 gm.line(gm.p0, gm.point(1, 1))          # p0 by attribute

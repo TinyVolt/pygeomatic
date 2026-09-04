@@ -104,6 +104,7 @@ You may reassign any of them (last-write-wins).
 | `gm.grid_origin` | `grid-origin` | Point | `(0,0)` | where the world origin sits on canvas ((0,0) = centered); reassign to pan |
 | `gm.T` | `T` | Bool | `true` | boolean literal |
 | `gm.F` | `F` | Bool | `false` | boolean literal |
+| `gm.with_numeric_mode` | `with-numeric-mode` | Bool | `false` | run the math on plain numbers instead of tensors: faster, no gradients; resets on `\clear` |
 
 **Canvas geometry.** (0,0) is the *center* of the frame. The visible region in
 world units is `x ∈ [-W/(2·unit), +W/(2·unit)]`, `y ∈ [-H/(2·unit), +H/(2·unit)]`
