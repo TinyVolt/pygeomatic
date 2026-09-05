@@ -374,8 +374,8 @@ def _iter_math(text: str, base_lineno: int):
 
 
 def _lint_math(parts: Sequence[Union["_Prose", "_Fence"]]) -> None:
-    """Fail the compile on undefined KaTeX macros / the `#`-hex footgun in prose
-    math, before any Python runs. Skips code fences (Python / verbatim)."""
+    """Fail the compile on undefined KaTeX macros in prose math, before any
+    Python runs. Skips code fences (Python / verbatim)."""
     for part in parts:
         if isinstance(part, _Fence) or not part.scan:
             continue

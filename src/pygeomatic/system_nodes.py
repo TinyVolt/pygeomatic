@@ -118,6 +118,16 @@ SYSTEM_NODES: list[SystemNode] = [
         "argument is expected.",
         reserve=True,
     ),
+    SystemNode(
+        "with-numeric-mode",
+        lambda: Bool._new(False),
+        doc="Whether the canvas math runs on plain numbers instead of tensors "
+        "(false). Set it (`with_numeric_mode = gm.bool_(True)`) for a scene that "
+        "wants the speed and computes no gradients — gradient commands stop "
+        "working while it is on. It resets to false on a fresh canvas and on "
+        "`\\clear`, so a scene that clears between demos should re-set it.",
+        reserve=True,
+    ),
 ]
 
 SYSTEM_NODE_IDS: frozenset[str] = frozenset(spec.id for spec in SYSTEM_NODES)

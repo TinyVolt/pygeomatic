@@ -190,7 +190,8 @@ def _assignment_targets(code: CodeType) -> tuple[list[int], dict[int, list[str]]
         elif op in _STORE_OPS:
             store(pop(1)[0], ins.argval)
         elif op == "STORE_ATTR":
-            pop(2)
+            pop(1)  # object (TOS)
+            store(pop(1)[0], ins.argval)  # value (TOS1) → attr name
         elif op == "STORE_SUBSCR":
             pop(3)
         elif op == "POP_TOP":
