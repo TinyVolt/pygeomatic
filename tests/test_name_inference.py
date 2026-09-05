@@ -123,14 +123,14 @@ def test_multi_target_assignment_infers_both_scopes():
     assert ns["b"].id == "b"
 
 
-def test_attribute_target_falls_back():
+def test_attribute_target_infers_name():
     class Holder:
         pass
 
     h = Holder()
     with gm.Store():
         h.p = gm.point(1, 1)
-    assert h.p.id == "p-0"
+    assert h.p.id == "p"
 
 
 def test_chained_assignment_names_every_target():
