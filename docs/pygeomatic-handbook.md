@@ -149,6 +149,8 @@ Infix arithmetic works **on Scalar / Complex / Array nodes** and records the
 overload command:
 
 - `c = a + b` → `\add`; `- * /` → `\sub \mul \div`; unary `-` → `\neg`.
+- `a % b` → `\mod`. Scalar-only: an Array broadcasts, but a Complex operand is
+  rejected by `\mod`'s parameter check (unlike `+ - * /`, which accept Complex).
 - Number literals may sit on either side (`2 * a`). Arrays broadcast elementwise.
 - Same-op chains fuse into one variadic command: `a + b + c` → one `\add a b c`.
 - `arr[i]` → `\get-array-element` (int or Scalar index; literal negative indices
@@ -156,7 +158,7 @@ overload command:
 - Chained assignment `a = b = gm.scalar(1)` records one command per target.
 
 **Not** supported via infix (use the explicit function): `**` (`gm.pow_`), `@`,
-in-place ops (`acc += 2` raises — assign a new name), infix on non-arithmetic
+in-place ops (`acc += 2`, `acc %= 2` raise — assign a new name), infix on non-arithmetic
 node types (Point, Circle, …), slices.
 
 Plain Python numbers use normal arithmetic freely (loop-computed coordinates are

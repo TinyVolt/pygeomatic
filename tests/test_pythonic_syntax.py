@@ -71,13 +71,22 @@ def test_each_operator_records_and_computes():
         sub = a - b
         mul = a * b
         div = a / b
+        mod = a % b
         neg = -a
-    assert [float(n) for n in (add, sub, mul, div, neg)] == [10.0, 6.0, 16.0, 4.0, -8.0]
+    assert [float(n) for n in (add, sub, mul, div, mod, neg)] == [
+        10.0,
+        6.0,
+        16.0,
+        4.0,
+        0.0,
+        -8.0,
+    ]
     assert gm.emit(s).splitlines()[2:] == [
         "add = \\add a b",
         "sub = \\sub a b",
         "mul = \\mul a b",
         "div = \\div a b",
+        "mod = \\mod a b",
         "neg = \\neg a",
     ]
 
@@ -89,12 +98,23 @@ def test_number_literals_on_either_side():
         right = 2 * a
         rsub = 10 - a
         rdiv = 12 / a
-    assert [float(n) for n in (left, right, rsub, rdiv)] == [6.0, 6.0, 7.0, 4.0]
+        lmod = a % 2
+        rmod = 17 % a
+    assert [float(n) for n in (left, right, rsub, rdiv, lmod, rmod)] == [
+        6.0,
+        6.0,
+        7.0,
+        4.0,
+        1.0,
+        2.0,
+    ]
     assert gm.emit(s).splitlines()[1:] == [
         "left = \\mul a 2",
         "right = \\mul 2 a",
         "rsub = \\sub 10 a",
         "rdiv = \\div 12 a",
+        "lmod = \\mod a 2",
+        "rmod = \\mod 17 a",
     ]
 
 
@@ -121,6 +141,35 @@ def test_array_broadcasting():
     assert gm.emit(s).splitlines()[-1] == "doubled = \\mul arr 2"
 
 
+def test_mod_broadcasts_over_arrays_but_refuses_complex():
+    # `\mod` is a plain Scalar Function, not an overload: it broadcasts over an
+    # Array like any declarative command, but takes no Complex operand.
+    with gm.Store() as s:
+        arr = gm.array(3, 4, 5)
+        rem = arr % 3
+    assert list(rem.numeric) == [0.0, 1.0, 2.0]
+    assert gm.emit(s).splitlines()[-1] == "rem = \\mod arr 3"
+
+    with gm.Store():
+        z = gm.complex_(1, 2)
+        with pytest.raises(TypeError, match="expects Scalar, got a Complex"):
+            z % 2  # noqa: B018
+
+
+def test_mod_chain_does_not_fuse():
+    # Only \add and \mul are variadic and associative; \mod takes exactly two.
+    with gm.Store() as s:
+        a = gm.scalar(17)
+        b = gm.scalar(7)
+        c = gm.scalar(3)
+        chained = a % b % c
+    assert float(chained) == 0.0
+    assert gm.emit(s).splitlines()[3:] == [
+        "num-0 = \\mod a b",
+        "chained = \\mod num-0 c",
+    ]
+
+
 def test_augmented_assignment_raises():
     # `acc += 2` would rebind the python variable while DSL node `acc` keeps
     # its old value — refused so results can't silently diverge.
@@ -130,6 +179,8 @@ def test_augmented_assignment_raises():
             acc += 2
         with pytest.raises(TypeError, match="in-place \\*="):
             acc *= 2
+        with pytest.raises(TypeError, match="in-place %="):
+            acc %= 2
     assert gm.emit(s) == "acc = \\scalar 1"  # nothing was recorded
 
 
@@ -138,6 +189,8 @@ def test_unsupported_operand_kinds():
     p = gm.point(1, 2)
     with pytest.raises(TypeError, match="Point nodes"):
         a + p  # noqa: B018
+    with pytest.raises(TypeError, match="Point nodes"):
+        p % 2  # noqa: B018
     with pytest.raises(TypeError, match="Point nodes"):
         -p  # noqa: B018
     with pytest.raises(TypeError):
