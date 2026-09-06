@@ -10,7 +10,7 @@ not computable in Python (record-only commands). Read them via ``.numeric`` /
 ``float(node)`` / ``complex(node)`` — these are inspection helpers, not DSL
 properties.
 
-Scalar / Complex / Array nodes support infix arithmetic (`+ - * /`, unary
+Scalar / Complex / Array nodes support infix arithmetic (`+ - * / %`, unary
 `-`) and Arrays support `arr[i]` / `len(arr)`: each operation routes through
 the corresponding overload command (`\\add`, `\\get-array-element`, ...) and
 records exactly like the explicit call. Chained `a + b + c` fuses into ONE
@@ -183,6 +183,12 @@ class GNode(BaseModel):
     def __rtruediv__(self, other):
         return _arith("/", "div", other, self)
 
+    def __mod__(self, other):
+        return _arith("%", "mod", self, other)
+
+    def __rmod__(self, other):
+        return _arith("%", "mod", other, self)
+
     def __neg__(self):
         if not _is_arithmetic_operand(self):
             raise TypeError(_NO_INFIX_MSG.format(op="unary -", types=f"{self.type} nodes"))
@@ -194,6 +200,7 @@ class GNode(BaseModel):
     __isub__ = _reject_inplace("-=")
     __imul__ = _reject_inplace("*=")
     __itruediv__ = _reject_inplace("/=")
+    __imod__ = _reject_inplace("%=")
 
     def __repr__(self) -> str:  # concise, id-first
         return f"{self.type}(id={self.id!r})"

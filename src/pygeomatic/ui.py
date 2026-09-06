@@ -40,12 +40,20 @@ from __future__ import annotations
 
 import json
 import re
+from contextlib import contextmanager
 from html import escape
 from typing import Optional, Sequence, Union
 
 from .nodes import GNode
-from .onclick import OnClickError, onclick, open_handler  # noqa: F401 — gm.ui.onclick
+from .onclick import OnClickError, capture_commands, onclick, open_handler  # noqa: F401
 from .store import IDENTIFIER_RE, current_store
+from .uitree import (  # noqa: F401 — UITreeError is part of the gm.ui surface
+    UITreeError,
+    add_element,
+    build_element,
+    container,
+    in_tree,
+)
 
 
 class UIError(ValueError):
@@ -125,8 +133,36 @@ def render_widget_html(spec: dict) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _register(node: GNode, kind: str, options: dict) -> None:
-    """Attach a widget to the node a constructor just recorded."""
+def _camel(name: str) -> str:
+    """`initial-value` → `initialValue`.
+
+    The inline path names its options for the attribute they become
+    (`data-initial-value`); the tree path names them for the schema, which is
+    written the way the browser reads them back. One conversion, here, rather
+    than two spellings kept in step by hand.
+    """
+    head, *rest = name.split("-")
+    return head + "".join(part.capitalize() for part in rest)
+
+
+def _sizing(width, height, grow, pad) -> dict:
+    """The four layout attributes every element accepts.
+
+    They ride on the wrapper cell the browser puts around each child, never
+    inside the control, which is why the six control components did not have to
+    change to gain them.
+    """
+    return {"width": width, "height": height, "grow": grow, "pad": pad}
+
+
+def _register(node: GNode, kind: str, options: dict, sizing: Optional[dict] = None) -> None:
+    """Attach a widget to the node a constructor just recorded.
+
+    Two destinations. Inside a `with gm.ui.col():` the control becomes an
+    element of that tree; otherwise it becomes an inline `<span class="nova-ui">`
+    addressed by `f"{r}"`, exactly as before. A control cannot be both: it is in
+    one place on the page, and putting it in a tree is what places it.
+    """
     store = current_store()
     node_id = node.id
     if not node_id:
@@ -138,6 +174,25 @@ def _register(node: GNode, kind: str, options: dict) -> None:
             f"{handler!r}: the command behind a control must exist before the reader "
             "touches anything, and a handler's commands only run once they click."
         )
+    if not IDENTIFIER_RE.match(node_id):
+        raise UIError(
+            f"node id {node_id!r} cannot carry a control: it is written straight "
+            "into an HTML attribute and must be a plain identifier"
+        )
+
+    if in_tree():
+        attrs = {_camel(name): value for name, value in options.items()}
+        attrs["node"] = node_id
+        add_element(build_element(kind, attrs, sizing or {}))
+        return
+
+    if sizing and any(value is not None for value in sizing.values()):
+        raise UIError(
+            f"gm.ui.{kind} was given layout (width/height/grow/pad) but is not "
+            "inside a `with gm.ui.col():` block. An inline control sits in a "
+            "sentence and takes its size from the text around it."
+        )
+
     existing = store.ui_widgets.get(node_id)
     if existing is not None:
         raise UIError(
@@ -145,11 +200,6 @@ def _register(node: GNode, kind: str, options: dict) -> None:
             f"may carry at most one, because f\"{{{node_id}}}\" looks the control "
             f"up by node id and could not tell two apart. Give the "
             f"{kind!r} its own node."
-        )
-    if not IDENTIFIER_RE.match(node_id):
-        raise UIError(
-            f"node id {node_id!r} cannot carry a control: it is written straight "
-            "into an HTML attribute and must be a plain identifier"
         )
     store.ui_widgets[node_id] = {"kind": kind, "node": node_id, "options": options}
 
@@ -171,6 +221,11 @@ def slider(
     value: Optional[float] = None,
     label: Optional[str] = None,
     show_value: bool = True,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
 ) -> "GNode":
     """A slider over [start, stop] driving a new Scalar node.
 
@@ -211,11 +266,20 @@ def slider(
             "label": label,
             "show-value": show_value,
         },
+        _sizing(width, height, grow, pad),
     )
     return node
 
 
-def checkbox(value: bool = False, label: Optional[str] = None) -> "GNode":
+def checkbox(
+    value: bool = False,
+    label: Optional[str] = None,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
+) -> "GNode":
     """A tick box driving a new Bool node.
 
     The usual partner for `gm.when`, which shows or hides prose while a Bool
@@ -232,7 +296,12 @@ def checkbox(value: bool = False, label: Optional[str] = None) -> "GNode":
     _check_label(label, "checkbox")
 
     node = bool_(value)
-    _register(node, "checkbox", {"initial-value": value, "label": label})
+    _register(
+        node,
+        "checkbox",
+        {"initial-value": value, "label": label},
+        _sizing(width, height, grow, pad),
+    )
     return node
 
 
@@ -242,6 +311,11 @@ def number(
     value: Optional[float] = None,
     step: Optional[float] = None,
     label: Optional[str] = None,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
 ) -> "GNode":
     """A typed number box driving a new Scalar node.
 
@@ -276,6 +350,7 @@ def number(
             "step": step,
             "label": label,
         },
+        _sizing(width, height, grow, pad),
     )
     return node
 
@@ -309,7 +384,7 @@ def _choice_options(options: Sequence, kind: str) -> tuple[list, str]:
     return choices, mode
 
 
-def _choice(kind: str, options, value, label):
+def _choice(kind: str, options, value, label, sizing=None):
     from .functions.implementations.basic_figures import scalar
     from .functions.implementations.basic_figures import text as _text_node
 
@@ -329,6 +404,7 @@ def _choice(kind: str, options, value, label):
         node,
         kind,
         {"initial-value": initial, "options": choices, "label": label},
+        sizing,
     )
     return node
 
@@ -337,6 +413,11 @@ def dropdown(
     options: Sequence[Union[str, float]],
     value: Optional[Union[str, float]] = None,
     label: Optional[str] = None,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
 ) -> "GNode":
     """A drop-down of `options` driving a new node holding the chosen one.
 
@@ -345,25 +426,35 @@ def dropdown(
     Compare it with `gm.cond.eq(mode, "sum")` or `gm.cond.eq(n, 1)` to gate
     prose on the choice.
     """
-    return _choice("dropdown", options, value, label)
+    return _choice("dropdown", options, value, label, _sizing(width, height, grow, pad))
 
 
 def radio(
     options: Sequence[Union[str, float]],
     value: Optional[Union[str, float]] = None,
     label: Optional[str] = None,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
 ) -> "GNode":
     """Radio buttons over `options`, driving a new node. Same as `dropdown` but
     with every choice visible at once — better for two or three options the
     reader should be able to see without clicking. An all-number list makes a
     Scalar node, an all-string list a Text node."""
-    return _choice("radio", options, value, label)
+    return _choice("radio", options, value, label, _sizing(width, height, grow, pad))
 
 
 def text(
     value: str = "",
     label: Optional[str] = None,
     placeholder: Optional[str] = None,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
 ) -> "GNode":
     """A free-text box driving a new Text node."""
     from .functions.implementations.basic_figures import text as _text_node
@@ -379,5 +470,124 @@ def text(
         node,
         "text",
         {"initial-value": value, "label": label, "placeholder": placeholder},
+        _sizing(width, height, grow, pad),
     )
     return node
+
+
+# ---------------------------------------------------------------------------
+# Element trees
+# ---------------------------------------------------------------------------
+#
+# Everything above puts ONE control in a sentence. Everything below arranges
+# several into a panel: containers that hold children, plus the three elements
+# that only make sense inside one (a label, a formula, a button).
+#
+# A tree does not travel on its element — a whole panel will not fit on the one
+# line markdown allows a control, and the compiled .md is read on GitHub. It
+# goes in the `ui:v1` manifest with a placeholder in the prose; `uitree.py` does
+# that bookkeeping.
+
+
+def col(gap: int = 0, align: str = "stretch", *, width=None, height=None, grow=None, pad=None):
+    """Stack the block's elements vertically.
+
+        with gm.ui.col(gap=2):
+            gm.ui.label("Radius")
+            r = gm.ui.slider(1, 5)
+
+    `gap` and `pad` are steps on the site's spacing scale, not pixels. The
+    outermost container is where the panel appears in the article.
+    """
+    return container("col", {"gap": gap, "align": align}, _sizing(width, height, grow, pad))
+
+
+def row(gap: int = 0, align: str = "center", *, width=None, height=None, grow=None, pad=None):
+    """Stack the block's elements horizontally. Wraps when it runs out of width."""
+    return container("row", {"gap": gap, "align": align}, _sizing(width, height, grow, pad))
+
+
+def box(
+    border: bool = False,
+    background: bool = False,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
+):
+    """A padded container, optionally with a border and a surface behind it."""
+    return container(
+        "box",
+        {"border": border, "background": background},
+        _sizing(width, height, grow, pad),
+    )
+
+
+def label(text: str, *, width=None, height=None, grow=None, pad=None) -> None:
+    """Plain text inside a tree.
+
+    `${node}` interpolates a live value, the same readout `f"{r}"` produces in
+    prose:
+
+        gm.ui.label("radius = ${r}")
+
+    Deliberately NOT markdown: formatting it would mean running the article
+    pipeline recursively inside an element. Use `gm.ui.math` for a formula.
+    """
+    add_element(build_element("label", {"text": text}, _sizing(width, height, grow, pad)))
+
+
+def math(latex: str, id: Optional[str] = None, *, width=None, height=None, grow=None, pad=None) -> None:
+    """A KaTeX formula inside a tree.
+
+    Give it an `id` to address it from `gm.tex(id)`, exactly as a `%id:` line
+    does for a formula written in the prose.
+    """
+    add_element(
+        build_element("math", {"latex": latex, "id": id}, _sizing(width, height, grow, pad))
+    )
+
+
+def button(label: str, *, width=None, height=None, grow=None, pad=None):
+    """Run the block's commands when the reader presses this button.
+
+        with gm.ui.row():
+            with gm.ui.button("reset"):
+                r = gm.scalar(3, out="r")
+
+    The sibling of `gm.ui.onclick`: that one attaches commands to a shape on the
+    canvas, this one to a button in a panel. Both leave the tape and travel in
+    the same `onclick:v1` manifest, so both get the same reader-side treatment —
+    the premium gate, and the rule that a press cannot interleave with a link
+    sequence or with narration.
+
+    The commands are NOT written into the prose as a `{}(cmd)` span, because
+    command links are numbered by document position and a button's span would
+    renumber every link after it.
+    """
+    if not in_tree():
+        raise UITreeError(
+            "gm.ui.button needs an open container — put it inside a "
+            "`with gm.ui.col():` or `with gm.ui.row():` block"
+        )
+    store = current_store()
+    # Buttons share the click-handler channel with gm.ui.onclick, which keys by
+    # NODE id — so a node the author happened to name `btn-0` would collide and
+    # one handler would silently replace the other. Skip past anything taken.
+    index = len(store.click_handlers)
+    while f"btn-{index}" in store.click_handlers:
+        index += 1
+    action = f"btn-{index}"
+    element = build_element(
+        "button", {"label": label, "action": action}, _sizing(width, height, grow, pad)
+    )
+
+    @contextmanager
+    def _run():
+        with capture_commands(store, f"gm.ui.button({label!r})") as commands:
+            yield
+        store.click_handlers[action] = {"commands": commands}
+        add_element(element)
+
+    return _run()

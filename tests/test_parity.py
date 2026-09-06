@@ -111,3 +111,54 @@ def test_node_property_whitelist_is_dsl_shaped():
         cls = gm.NODE_CLASSES[node_type]
         for prop in props:
             assert isinstance(getattr(cls, prop, None), property), (node_type, prop)
+
+
+# ---------------------------------------------------------------------------
+# gm.ui element vocabulary
+# ---------------------------------------------------------------------------
+#
+# ui_schema.json is generated into this package by the web repo's
+# `npm run gen:ui-schema`, from a hand-written source that also generates the
+# browser's parser table. Neither repo is upstream of the other, so this is the
+# check that the python side has kept up: a tag added to the schema with no
+# constructor is unreachable, and a constructor with no tag cannot validate.
+
+
+@pytest.fixture(scope="module")
+def ui_schema():
+    from pygeomatic.uitree import _schema
+
+    return _schema()
+
+
+def test_every_ui_tag_has_a_constructor(ui_schema):
+    from pygeomatic import ui
+
+    tags = {t for t in ui_schema["tags"] if not t.startswith("_")}
+    # `when` is the one tag with no `gm.ui.*` of its own: it is spelled the same
+    # inside a tree as it is for prose (`with when(...)`), which is the point.
+    tags.discard("when")
+    missing = sorted(tag for tag in tags if not callable(getattr(ui, tag, None)))
+    assert not missing, f"schema tags with no gm.ui constructor: {missing}"
+
+
+def test_every_ui_constructor_has_a_tag(ui_schema):
+    from pygeomatic import ui
+
+    tags = {t for t in ui_schema["tags"] if not t.startswith("_")}
+    constructors = {"col", "row", "box", "label", "math", "button"} | {
+        "slider", "number", "checkbox", "dropdown", "radio", "text"
+    }
+    assert constructors <= tags, f"constructors with no schema tag: {sorted(constructors - tags)}"
+
+
+def test_the_sizing_attributes_are_shared_by_every_tag(ui_schema):
+    """Uniform sizing is the discipline that stops the schema bloating: no tag
+    may redefine width/height/grow/pad as something of its own."""
+    shared = {a for a in ui_schema["sizing"] if not a.startswith("_")}
+    assert shared == {"width", "height", "grow", "pad"}
+    for tag, spec in ui_schema["tags"].items():
+        if tag.startswith("_"):
+            continue
+        clash = shared & {a for a in spec["attrs"] if not a.startswith("_")}
+        assert not clash, f"{tag} shadows shared sizing attribute(s) {sorted(clash)}"

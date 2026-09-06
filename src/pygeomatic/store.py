@@ -260,6 +260,14 @@ class Store:
         # rather than one per node — hence a plain list. None means "no block
         # yet", which is how a second one is detected; [] never occurs.
         self.page_load: Optional[list[str]] = None
+        # gm.ui element trees: whole panels of controls, keyed by the id their
+        # placeholder carries in the prose → the root element dict. Declarative
+        # config like tex_bindings and ui_widgets, never tape commands. Kept off
+        # the element itself (unlike a single control's data-* attributes)
+        # because a tree of twenty elements on markdown's one required line
+        # would make the compiled .md unreadable, and people read these files on
+        # GitHub.
+        self.ui_trees: dict[str, dict] = {}
         self._token = None
         # Every canvas starts with the engine's default nodes (`p0`, `T`/`F`,
         # `learning-rate`, ...); seed them so a scene can reference them without

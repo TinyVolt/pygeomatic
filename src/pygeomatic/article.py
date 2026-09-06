@@ -65,6 +65,8 @@ from .onpageload import harvest_page_load, open_page_load
 from .parse import DslParseError, parse_dsl
 from .store import Store, _auto_create_enabled, current_store
 from .tex import harvest_tex_bindings
+from .uitree import harvest_ui_trees
+from .uitree import node_refs as tree_node_refs
 
 # texatlas bindings (gm.tex) and click handlers (gm.ui.onclick) are declarative
 # page config, not DSL: the compiler harvests them from the session and
@@ -203,6 +205,32 @@ def md(text: str) -> None:
     rec.md.append(cleandoc(text))
 
 
+def md_raw(text: str) -> None:
+    """Append one line of already-formed markdown, verbatim.
+
+    Internal counterpart to `md()`, for machinery that emits HTML rather than an
+    author's prose — currently only a UI tree's placeholder. It skips
+    `cleandoc`, which would be wrong for generated markup, but shares `md()`'s
+    channel so a tree lands in document order with everything else the fence
+    wrote.
+    """
+    rec = _recorder.get()
+    if rec is None:
+        raise ArticleError(
+            None, "a gm.ui tree is only usable inside a pygeomatic article block"
+        )
+    handler = open_handler()
+    if handler is not None:
+        raise ArticleError(
+            None,
+            f"a gm.ui tree was built inside the gm.ui.onclick block for {handler!r}: "
+            "a tree is part of the page, written once when the article compiles, so "
+            "it cannot be produced by a click. Build it outside and gate it with "
+            "gm.when(...) on a node the handler sets.",
+        )
+    rec.md.append(text)
+
+
 @contextmanager
 def when(condition):
     """Show the markdown in this block only while `condition` holds.
@@ -225,6 +253,7 @@ def when(condition):
     controls are all fine.
     """
     from .cond import evaluate, node_refs, to_payload
+    from .uitree import container as _ui_container, in_tree
 
     rec = _recorder.get()
     if rec is None:
@@ -232,6 +261,16 @@ def when(condition):
             None, "gm.when() is only usable inside a pygeomatic article block"
         )
     payload = to_payload(condition)
+
+    # Inside a `with gm.ui.col():` the same syntax gates ELEMENTS rather than
+    # prose, so it becomes a `when` element in the tree. Identical condition
+    # payload, identical author-facing spelling; only the mounting differs (the
+    # browser shows a tree's block with a Solid <Show>, and the prose block by
+    # toggling `display` on the div below).
+    if in_tree():
+        with _ui_container("when", {"cond": payload}, {}):
+            yield
+        return
 
     outer = rec.md
     rec.md = []
@@ -756,6 +795,9 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
         finally:
             _auto_create_enabled.reset(auto_create_token)
         replayed = emit(check).splitlines()[len(page_lines) :]
+        # Every node the article actually defines, captured while the replay
+        # store is still open. Used just below to check a UI tree's references.
+        defined_ids = set(check.nodes)
     if replayed != commands:
         for i, (got, want) in enumerate(zip(replayed, commands)):
             if got != want:
@@ -791,6 +833,27 @@ def compile_article(markdown: str, *, allow_coercions: bool = False) -> str:
     page_manifest = harvest_page_load(store)
     if page_manifest:
         compiled = _append_manifest(compiled, "onpageload:v1", page_manifest)
+
+    ui_manifest = harvest_ui_trees(store)
+    if ui_manifest:
+        # A tree's own content is declarative, but its NODE REFERENCES are not:
+        # a control drives a node the article has to define somewhere. An
+        # undefined one would render a live-looking control with nothing behind
+        # it, and nothing would report that at read time — so it fails here.
+        # A button's commands are excluded on purpose (they are outside the gate
+        # for the same reason a click handler's are: they run on a press, not in
+        # document order), so a tree may not consume what only a button defines.
+        for tree_id, root in ui_manifest.items():
+            missing = sorted(tree_node_refs(root, set()) - defined_ids)
+            if missing:
+                raise ArticleError(
+                    None,
+                    f"gm.ui tree {tree_id!r} reads "
+                    f"{', '.join(repr(m) for m in missing)}, which the article never "
+                    "defines. A control needs a node behind it before the reader can "
+                    "move it — define it in the document or in gm.onpageload().",
+                )
+        compiled = _append_manifest(compiled, "ui:v1", ui_manifest)
     return compiled
 
 

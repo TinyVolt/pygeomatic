@@ -133,12 +133,16 @@ Rules (violations raise errors):
    `-` map to \\sub, \\mul, \\div, \\neg; number literals may sit on either
    side (`2 * a`); Arrays broadcast elementwise. Same-op chains fuse into
    one variadic command (`d = a + b + c` emits `d = \\add a b c`).
+   `%` maps to \\mod (`r = a % b` emits `r = \\mod a b`), but only for
+   Scalars and Arrays — \\mod takes no Complex operand, and `%` chains do
+   not fuse.
    `x = arr[i]` emits `x = \\get-array-element arr i` (int or Scalar index;
    literal negative indices are normalized), and `len(arr)` is a plain
    python int recorded as nothing, so `for k in range(len(arr)):` unrolls.
    Chained `a = b = gm.scalar(1)` records one command per target name.
    NOT supported (use the explicit functions): `**` (`gm.pow_`), `@`,
-   in-place ops (`acc += 2` raises — assign a NEW name: `total = acc + 2`),
+   in-place ops (`acc += 2`, `acc %= 2` raise — assign a NEW name:
+   `total = acc + 2`),
    infix on other node types (Point, Circle, ...), slices, `arr[i] = v`.
    Plain Python numbers still use normal arithmetic freely (e.g.
    loop-computed coordinates); a command is recorded only when a node is

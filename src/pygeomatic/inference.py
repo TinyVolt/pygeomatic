@@ -84,6 +84,8 @@ _DUNDER_FRAME_NAMES = frozenset(
         "__rmul__",
         "__truediv__",
         "__rtruediv__",
+        "__mod__",
+        "__rmod__",
         "__neg__",
         "__getitem__",
     }
