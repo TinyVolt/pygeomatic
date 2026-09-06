@@ -1,0 +1,157 @@
+{
+  "version": 1,
+  "_comment": [
+    "The gm.ui element vocabulary. HAND-WRITTEN, and the single source of truth for",
+    "both repos: `npm run gen:ui-schema` emits src/lib/geomatic/ui/tree/schema.generated.ts",
+    "here and copies this file to pygeomatic as ui_schema.json.",
+    "",
+    "Scope: this file describes an element's SHAPE — which attributes exist, their",
+    "types, their defaults, and whether children are allowed. It deliberately cannot",
+    "express relationships between attributes (stop > start, initialValue must be one",
+    "of options). Those live once in parseWidget.ts's validate* functions, shared by",
+    "the inline control path and the tree path.",
+    "",
+    "Adding a tag or an attribute is easy. REMOVING one is impossible: articles are",
+    "published as markdown in other people's GitHub repos and keep the spelling they",
+    "were written with. Keep this small."
+  ],
+
+  "sizing": {
+    "_comment": "Accepted on every tag, applied by the tree's wrapper cell, never by the leaf components.",
+    "width": { "type": "size" },
+    "height": { "type": "size" },
+    "grow": { "type": "number" },
+    "pad": { "type": "space" }
+  },
+
+  "sizeUnits": ["px", "ch", "%", "rem"],
+
+  "tags": {
+    "col": {
+      "children": "many",
+      "doc": "Stack children vertically.",
+      "attrs": {
+        "gap": { "type": "space", "default": 0 },
+        "align": { "type": "enum", "values": ["start", "center", "end", "stretch"], "default": "stretch" }
+      }
+    },
+    "row": {
+      "children": "many",
+      "doc": "Stack children horizontally.",
+      "attrs": {
+        "gap": { "type": "space", "default": 0 },
+        "align": { "type": "enum", "values": ["start", "center", "end", "stretch"], "default": "center" }
+      }
+    },
+    "box": {
+      "children": "many",
+      "doc": "A container with padding, an optional border and an optional surface background.",
+      "attrs": {
+        "border": { "type": "bool", "default": false },
+        "background": { "type": "bool", "default": false }
+      }
+    },
+    "when": {
+      "children": "many",
+      "doc": "Show its children while the condition holds. The payload is the same shape gm.cond builds for prose blocks.",
+      "attrs": {
+        "cond": { "type": "cond", "required": true }
+      }
+    },
+
+    "label": {
+      "children": "none",
+      "doc": "Plain text. ${node} interpolates a live value. Not markdown.",
+      "attrs": {
+        "text": { "type": "string", "required": true }
+      }
+    },
+    "math": {
+      "children": "none",
+      "doc": "A KaTeX formula. Give it an id to address it from gm.tex.",
+      "attrs": {
+        "latex": { "type": "string", "required": true },
+        "id": { "type": "string" }
+      }
+    },
+    "button": {
+      "children": "none",
+      "doc": "Runs DSL commands when pressed. `action` names an entry in the onclick manifest.",
+      "attrs": {
+        "label": { "type": "string", "required": true },
+        "action": { "type": "identifier", "required": true }
+      }
+    },
+
+    "slider": {
+      "children": "none",
+      "leaf": "slider",
+      "doc": "A number the reader drags through a range.",
+      "attrs": {
+        "node": { "type": "identifier", "required": true },
+        "start": { "type": "number", "required": true },
+        "stop": { "type": "number", "required": true },
+        "step": { "type": "number" },
+        "initialValue": { "type": "number" },
+        "showValue": { "type": "bool", "default": true },
+        "label": { "type": "string" }
+      }
+    },
+    "number": {
+      "children": "none",
+      "leaf": "number",
+      "doc": "A number the reader types. Bounds are optional.",
+      "attrs": {
+        "node": { "type": "identifier", "required": true },
+        "start": { "type": "number" },
+        "stop": { "type": "number" },
+        "step": { "type": "number" },
+        "initialValue": { "type": "number" },
+        "label": { "type": "string" }
+      }
+    },
+    "checkbox": {
+      "children": "none",
+      "leaf": "checkbox",
+      "doc": "True or false.",
+      "attrs": {
+        "node": { "type": "identifier", "required": true },
+        "initialValue": { "type": "bool", "default": false },
+        "label": { "type": "string" }
+      }
+    },
+    "dropdown": {
+      "children": "none",
+      "leaf": "dropdown",
+      "doc": "Pick one option. All-string options drive a Text node, all-number a Scalar.",
+      "attrs": {
+        "node": { "type": "identifier", "required": true },
+        "options": { "type": "options", "required": true },
+        "initialValue": { "type": "any" },
+        "label": { "type": "string" }
+      }
+    },
+    "radio": {
+      "children": "none",
+      "leaf": "radio",
+      "doc": "Like a dropdown, with every option on screen.",
+      "attrs": {
+        "node": { "type": "identifier", "required": true },
+        "options": { "type": "options", "required": true },
+        "initialValue": { "type": "any" },
+        "label": { "type": "string" }
+      }
+    },
+    "text": {
+      "children": "none",
+      "leaf": "text",
+      "doc": "Whatever the reader types.",
+      "attrs": {
+        "node": { "type": "identifier", "required": true },
+        "initialValue": { "type": "string", "default": "" },
+        "placeholder": { "type": "string" },
+        "label": { "type": "string" }
+      }
+    }
+  }
+}

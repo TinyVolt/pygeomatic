@@ -84,6 +84,31 @@ def _barrier(store: Store) -> None:
         store.commands[-1].fusable = False
 
 
+@contextmanager
+def capture_commands(store: Store, what: str):
+    """Take the block's commands off the tape and hand them back as DSL lines.
+
+    The shared half of "something the reader triggers": a click handler
+    (`gm.ui.onclick`) and a button (`gm.ui.button`) differ only in what carries
+    the trigger, so the tape surgery lives here once. `_barrier` at both edges
+    stops variadic fusion reaching across; `what` names the caller in the
+    empty-body error.
+
+    Yields a list that is filled on exit, so a caller can hold onto it while its
+    own block runs.
+    """
+    lines: list[str] = []
+    start = len(store.commands)
+    _barrier(store)
+    yield lines
+    captured = store.commands[start:]
+    if not captured:
+        raise OnClickError(f"{what} recorded no commands, so triggering it would do nothing")
+    del store.commands[start:]
+    _barrier(store)
+    lines.extend(render_command(cmd) for cmd in captured)
+
+
 def _validate_target(target) -> str:
     if not isinstance(target, GNode):
         raise OnClickError(
@@ -130,26 +155,14 @@ def onclick(target: GNode):
             "commands would have to belong to both."
         )
 
-    start = len(store.commands)
-    _barrier(store)
-    token = _open.set(node_id)
-    try:
-        yield target
-    finally:
-        _open.reset(token)
+    with capture_commands(store, f"gm.ui.onclick({node_id!r})") as commands:
+        token = _open.set(node_id)
+        try:
+            yield target
+        finally:
+            _open.reset(token)
 
-    captured = store.commands[start:]
-    if not captured:
-        raise OnClickError(
-            f"gm.ui.onclick({node_id!r}) recorded no commands, so clicking the node "
-            "would do nothing"
-        )
-    del store.commands[start:]
-    _barrier(store)
-
-    store.click_handlers[node_id] = {
-        "commands": [render_command(cmd) for cmd in captured]
-    }
+    store.click_handlers[node_id] = {"commands": commands}
 
 
 # ---------------------------------------------------------------------------
