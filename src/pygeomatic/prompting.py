@@ -165,10 +165,94 @@ Rules (violations raise errors):
 """
 
 
+_LIVE_GRAPH = """\
+## The scene is a live graph
+
+This is the most important thing to understand. Everything else follows from it.
+
+Every `gm.*` call makes a node, and a node's value is computed from its input
+nodes. The engine keeps that link alive: when an input changes, every node built
+from it recomputes at once, and so does everything built from those, all the way
+down. Inputs change, for example, when `gm.animate` runs or a gradient step
+updates a parameter.
+
+So build a scene as a chain of dependencies:
+
+- Make the free inputs once, from plain numbers (`r = gm.scalar(2)`,
+  `c = gm.point(0, 0)`).
+- Build everything else from those nodes: `circ = gm.circle(c, r)`,
+  `d = 2 * r`, `tip = gm.point(c.x, d)`. Change `c` or `r`, and all of it
+  follows.
+- Never type a value that should come from a node. `d = gm.scalar(4)` looks the
+  same as `d = 2 * r` today, but has no link to `r` and will not follow it.
+- Python never knows the live values. Do the math with nodes, not with Python
+  numbers read from nodes.
+- Assigning a name that already exists replaces that node, and everything built
+  from the old one breaks. Use a new name for every node.
+
+### Commands that take a formula
+
+Some commands take an input node and an output node built from it. The engine
+reads the chain of nodes between them as a function, and evaluates it at many
+input values itself.
+
+- The input node is only a placeholder. Its own value is ignored (except that
+  `t` in `solve_ode` and `simulate_sde` sets the start time).
+- The output must be built from the input through `gm` calls. If it does not
+  depend on the input, nothing fails, but the result is wrong: a flat plot,
+  identical arrows.
+- Every other node the formula uses stays live. Change it, and the result
+  redraws.
+- Give each role its own node. Never reuse a formula's placeholder as an
+  ordinary value somewhere else, even when the numbers match.
+
+```python
+def build(gm):
+    # plot_reactive(x, y): y as a function of x, swept across the canvas.
+    x = gm.scalar(0)
+    a = gm.scalar(0.5)
+    parabola = a * x * x
+    gm.plot_reactive(x, parabola)     # changing a redraws it
+
+    # vector_field(p, out): p is a Point. If out is a Point, the arrow at p is
+    # out. If out is a Scalar, the arrow at p is the gradient of out.
+    p = gm.point(0, 0)
+    neg_y = -p.y
+    v = gm.point(neg_y, p.x)
+    gm.vector_field(p, v)             # rotation field; imperative, do not assign
+    f = p.x * p.x + p.y * p.y
+    gm.vector_field(p, f)             # gradient field (2x, 2y)
+
+    # flow(p, out, start, duration, steps=200): follows the same kind of field.
+    start = gm.point(2, 0)
+    duration = gm.scalar(3)
+    orbit = gm.flow(p, v, start, duration)
+
+    # solve_ode(t, y, dydt, y_start, t_end, steps=200): dy/dt from t and y.
+    t = gm.scalar(0)                  # its value is the start time
+    y = gm.scalar(0)                  # placeholder
+    dydt = t - y
+    y_start = gm.scalar(1)
+    t_end = gm.scalar(4)
+    curve = gm.solve_ode(t, y, dydt, y_start, t_end)
+
+    # partial_derivative(target, param): target built from param; stays live.
+    w = gm.scalar(2)
+    loss = w * w
+    slope = gm.partial_derivative(loss, w)   # 4 now, and follows w
+```
+
+The same pattern holds for `plot_inverse(x, y)` (sweeps along the vertical
+axis) and `simulate_sde(t, x, drift, diffusion, x0, t1, steps=200, seed=-1)`
+(drift and diffusion are formulas of `t` and `x`).
+"""
+
+
 def system_prompt() -> str:
     """Complete system prompt for prompt→python→DSL generation."""
     return (
         f"{_RULES}\n"
+        f"{_LIVE_GRAPH}\n"
         f"## System default nodes\n"
         f"Every canvas starts with these nodes; reference them directly as "
         f"`gm.<name>` (or reassign their id with `out=`) without defining "

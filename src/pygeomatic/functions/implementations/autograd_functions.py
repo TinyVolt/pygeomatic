@@ -75,6 +75,13 @@ def partial_derivative(target, param_node):
     imperative=True,
 )
 def gradient_descent_step(ids):
+    for node in ids:
+        if isinstance(node, Array):
+            raise TypeError(
+                "\\gradient-descent-step does not take an Array. Pass single Scalars "
+                "or Points, or call gm.gradient_descent_step() with no arguments to "
+                "step every parameter, including the elements of array parameters."
+            )
     return Dummy._new()
 
 
