@@ -44,7 +44,7 @@ from contextlib import contextmanager
 from html import escape
 from typing import Optional, Sequence, Union
 
-from .nodes import GNode
+from .nodes import Bool, GNode, Scalar, Text
 from .onclick import OnClickError, capture_commands, onclick, open_handler  # noqa: F401
 from .store import IDENTIFIER_RE, current_store
 from .uitree import (  # noqa: F401 — UITreeError is part of the gm.ui surface
@@ -204,6 +204,24 @@ def _register(node: GNode, kind: str, options: dict, sizing: Optional[dict] = No
     store.ui_widgets[node_id] = {"kind": kind, "node": node_id, "options": options}
 
 
+def _plain(
+    value, kind: str, param: str, want: tuple[type[Union[Scalar, Text, Bool]], ...]
+):
+    """A `want`-typed node becomes its python value; a plain value passes through."""
+    if not isinstance(value, GNode):
+        return value
+    if not isinstance(value, want):
+        names = " or ".join(t.type for t in want)
+        raise UIError(
+            f"gm.ui.{kind} {param} takes a {names} node, got a {value.type} node"
+        )
+    if value.numeric is None:
+        raise UIError(
+            f"gm.ui.{kind} {param}: {value.type} node {value.id!r} has no value"
+        )
+    return value.numeric
+
+
 def _check_label(label: Optional[str], kind: str) -> None:
     if label is not None and not isinstance(label, str):
         raise UIError(f"gm.ui.{kind} label must be a string, got {label!r}")
@@ -215,10 +233,10 @@ def _check_label(label: Optional[str], kind: str) -> None:
 
 
 def slider(
-    start: float,
-    stop: float,
-    step: Optional[float] = None,
-    value: Optional[float] = None,
+    start: Union[float, Scalar],
+    stop: Union[float, Scalar],
+    step: Optional[Union[float, Scalar]] = None,
+    value: Optional[Union[float, Scalar]] = None,
     label: Optional[str] = None,
     show_value: bool = True,
     *,
@@ -234,8 +252,10 @@ def slider(
     """
     from .functions.implementations.basic_figures import scalar
 
-    start = float(start)
-    stop = float(stop)
+    start = float(_plain(start, "slider", "start", (Scalar,)))
+    stop = float(_plain(stop, "slider", "stop", (Scalar,)))
+    step = _plain(step, "slider", "step", (Scalar,))
+    value = _plain(value, "slider", "value", (Scalar,))
     if stop <= start:
         raise UIError(f"gm.ui.slider needs stop > start, got start={start}, stop={stop}")
     if step is not None:
@@ -272,7 +292,7 @@ def slider(
 
 
 def checkbox(
-    value: bool = False,
+    value: Union[bool, Bool] = False,
     label: Optional[str] = None,
     *,
     width=None,
@@ -291,6 +311,7 @@ def checkbox(
     """
     from .functions.implementations.boolean_functions import bool_
 
+    value = _plain(value, "checkbox", "value", (Bool,))
     if not isinstance(value, bool):
         raise UIError(f"gm.ui.checkbox value must be True or False, got {value!r}")
     _check_label(label, "checkbox")
@@ -306,10 +327,10 @@ def checkbox(
 
 
 def number(
-    start: Optional[float] = None,
-    stop: Optional[float] = None,
-    value: Optional[float] = None,
-    step: Optional[float] = None,
+    start: Optional[Union[float, Scalar]] = None,
+    stop: Optional[Union[float, Scalar]] = None,
+    value: Optional[Union[float, Scalar]] = None,
+    step: Optional[Union[float, Scalar]] = None,
     label: Optional[str] = None,
     *,
     width=None,
@@ -324,6 +345,10 @@ def number(
     """
     from .functions.implementations.basic_figures import scalar
 
+    start = _plain(start, "number", "start", (Scalar,))
+    stop = _plain(stop, "number", "stop", (Scalar,))
+    step = _plain(step, "number", "step", (Scalar,))
+    value = _plain(value, "number", "value", (Scalar,))
     start = None if start is None else float(start)
     stop = None if stop is None else float(stop)
     if start is not None and stop is not None and stop <= start:
@@ -365,6 +390,7 @@ def _choice_options(options: Sequence, kind: str) -> tuple[list, str]:
     """
     if not isinstance(options, (list, tuple)) or not options:
         raise UIError(f"gm.ui.{kind} needs a non-empty list of options")
+    options = [_plain(o, kind, "options", (Scalar, Text)) for o in options]
 
     if all(isinstance(o, str) for o in options):
         choices, mode = list(options), "text"
@@ -389,6 +415,7 @@ def _choice(kind: str, options, value, label, sizing=None):
     from .functions.implementations.basic_figures import text as _text_node
 
     choices, mode = _choice_options(options, kind)
+    value = _plain(value, kind, "value", (Scalar, Text))
     if value is None:
         initial = choices[0]
     else:
@@ -410,8 +437,8 @@ def _choice(kind: str, options, value, label, sizing=None):
 
 
 def dropdown(
-    options: Sequence[Union[str, float]],
-    value: Optional[Union[str, float]] = None,
+    options: Sequence[Union[str, float, Scalar, Text]],
+    value: Optional[Union[str, float, Scalar, Text]] = None,
     label: Optional[str] = None,
     *,
     width=None,
@@ -430,8 +457,8 @@ def dropdown(
 
 
 def radio(
-    options: Sequence[Union[str, float]],
-    value: Optional[Union[str, float]] = None,
+    options: Sequence[Union[str, float, Scalar, Text]],
+    value: Optional[Union[str, float, Scalar, Text]] = None,
     label: Optional[str] = None,
     *,
     width=None,
@@ -447,7 +474,7 @@ def radio(
 
 
 def text(
-    value: str = "",
+    value: Union[str, Text] = "",
     label: Optional[str] = None,
     placeholder: Optional[str] = None,
     *,
@@ -459,6 +486,7 @@ def text(
     """A free-text box driving a new Text node."""
     from .functions.implementations.basic_figures import text as _text_node
 
+    value = _plain(value, "text", "value", (Text,))
     if not isinstance(value, str):
         raise UIError(f"gm.ui.text value must be a string, got {value!r}")
     if placeholder is not None and not isinstance(placeholder, str):
