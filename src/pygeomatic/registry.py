@@ -316,6 +316,44 @@ class _Resolved:
     value: Any
 
 
+_IMPERATIVE_MIN_VARIADIC = {
+    "trail": 1,
+    "param": 1,
+    "highlight": 1,
+    "hide": 1,
+    "show": 1,
+    "remove": 1,
+    "gradient-descent-step": 0,
+}
+
+
+def _min_variadic_values(fdef: FunctionDef) -> int:
+    if fdef.is_macro:
+        return 0
+    if fdef.is_imperative:
+        return _IMPERATIVE_MIN_VARIADIC.get(fdef.keyword, 0)
+    return 1
+
+
+def _too_few_arguments(fdef: FunctionDef, needed: int, given: list) -> str:
+    from .prompting import python_name
+
+    names = " ".join(f"{p.name}..." if p.variadic else p.name for p in fdef.params)
+    message = (
+        f"\\{fdef.keyword} needs at least {needed} argument{'' if needed == 1 else 's'} "
+        f"({names}), got {len(given)}"
+    )
+    arrays = [a for a in given if isinstance(a, Array)]
+    if arrays:
+        label = arrays[0].id.replace("-", "_") if arrays[0].id else "values"
+        message += (
+            f". {'`' + arrays[0].id + '` is' if arrays[0].id else 'That is'} an Array, and an Array "
+            f"is not unpacked into the arguments; did you mean "
+            f"gm.{python_name(fdef.keyword)}(*{label})?"
+        )
+    return message
+
+
 def _bind(
     fdef: FunctionDef, args: tuple, kwargs: dict, store: Store
 ) -> tuple[list[ArgToken], list[Any]]:
@@ -410,6 +448,14 @@ def _bind(
                     "both position and keyword"
                 )
             slots[idx + j] = val if piece is None else _Resolved(*piece)
+
+    if variadic:
+        min_rest = _min_variadic_values(fdef)
+        missing_fixed = any(
+            slots[i] is UNSET and not params[i].has_default for i in range(max_fixed)
+        )
+        if min_rest and (missing_fixed or len(rest) < min_rest):
+            raise TypeError(_too_few_arguments(fdef, max_fixed + min_rest, [*args, *kwargs.values()]))
 
     # A defaulted hole before the last supplied fixed slot (or before variadic
     # values) must emit its literal default; trailing holes stay off the tape.
