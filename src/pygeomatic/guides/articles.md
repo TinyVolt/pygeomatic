@@ -174,20 +174,57 @@ with gm.ui.box(border=True, pad=2):
             gm.ui.label("That is a big circle.")
 ```
 
-- Containers: `gm.ui.col(gap=0, align="stretch")`, `gm.ui.row(gap=0, align="center")`
-  (it wraps when it runs out of width), and `gm.ui.box(border=False, background=False)`.
-  `align` is `start`, `center`, `end` or `stretch`.
+- Containers: `gm.ui.col(gap=0, align="stretch", justify="start")`,
+  `gm.ui.row(gap=0, align="center", justify="start")` (it wraps when it runs out of
+  width), and `gm.ui.box(border=False, background=False)`.
+  - `align` places the children across the stack: `start`, `center`, `end` or
+    `stretch`. In a row that is up and down; in a column, left and right.
+  - `justify` places them along the stack: `start`, `center`, `end` or `between`
+    (first child at one end, last at the other). In a row that is left and right; in
+    a column, up and down, which only shows when the column has a `height`.
 - Inside a container:
   - any control;
   - `gm.ui.label(text)`: plain text, not markdown, where `${node}` shows a live value;
   - `gm.ui.math(latex, id=None)`: a formula, which `gm.tex(id)` can address;
   - `gm.ui.button(label)`: a `with` block whose commands run when pressed;
   - `gm.when(...)`: shows the elements inside it only while the condition holds.
-- Every element also takes `width`, `height`, `grow` and `pad` as keywords.
+- Every element also takes `width`, `height`, `grow`, `pad`, `font_size` and
+  `align_self` as keywords.
   - `gap` and `pad` are spacing steps from 0 to 9, not pixels.
   - `width` and `height` are a step, `"fill"`, or a length in `px`, `ch`, `%` or `rem`,
     such as `"12ch"`.
-  - Those four keywords only work on a control inside a container.
+  - `font_size` is a length in `px`, `rem`, `em` or `%`, such as `"1.2rem"`. Never a
+    step. On a container it sizes every label, formula and button inside; an element
+    that sets its own wins. Controls keep their own size.
+  - `align_self` overrides the container's `align` for this one element: `start`,
+    `center`, `end` or `stretch`.
+  - These keywords only work on a control inside a container.
+
+```python
+# font_size: the whole panel larger, one formula larger still, one button smaller
+with gm.ui.col(gap=2, font_size="1.1rem"):
+    gm.ui.label("Radius")
+    gm.ui.math("A = \\pi r^2", font_size="1.5em")
+    with gm.ui.button("reset", font_size="0.8rem"):
+        r = gm.scalar(3)
+
+# align_self: everything on the left except one centred label
+with gm.ui.col(gap=2, align="start"):
+    gm.ui.label("Settings")
+    r = gm.ui.slider(1, 5, value=3)
+    gm.ui.label("drag to resize", align_self="center")
+
+# justify: buttons on the right edge; then a label at each end
+with gm.ui.row(gap=1, justify="end"):
+    with gm.ui.button("cancel"):
+        r = gm.scalar(3)
+    with gm.ui.button("apply"):
+        r = gm.scalar(5)
+with gm.ui.row(justify="between"):
+    gm.ui.label("Radius")
+    gm.ui.label("${r}")
+```
+
 - A button's commands behave like a `gm.ui.onclick` block: they leave the document's
   steps.
 - A container cannot be empty. A button must be inside a container.
