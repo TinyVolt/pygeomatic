@@ -1,6 +1,6 @@
 # gm.ui element tree examples
 
-Laying gm.ui controls out in containers to form an element tree: five worked examples, and the rule that a control renders only inside the container it is created in.
+Laying gm.ui controls out in containers to form an element tree: five worked examples, the layout keywords (size, text size, alignment), and the rule that a control renders only inside the container it is created in.
 
 
 ### Something to be aware of
@@ -236,25 +236,57 @@ Every element takes `width`, `height`, `grow`, `pad`, `font_size` and
 `align_self`. `col` and `row` also take `gap`, `align` (across the stack) and
 `justify` (along it).
 
-```python
-with gm.ui.col(gap=2, pad=2, font_size="1.1rem"):   # sizes the whole panel
-    gm.ui.label("Radius", align_self="center")      # just this one, centred
-    r = gm.ui.slider(1, 5, value=3, grow=1)
-    gm.ui.math("A = \\pi r^2", font_size="1.4em")   # bigger than its neighbours
+### `font_size`
 
-    with gm.ui.row(gap=1, justify="end"):           # buttons on the right edge
-        with gm.ui.button("reset", font_size="0.8rem"):
-            r = gm.scalar(3, out="r")
+A length in `px`, `rem`, `em` or `%` — never a spacing step, because that scale
+measures gaps. It **inherits**: set on a container it sizes every `label`,
+`math` and `button` inside, and an element that sets its own wins. The six
+controls keep their fixed sizes either way.
+
+```python
+with gm.ui.col(gap=2, font_size="1.1rem"):          # everything inside at 1.1rem
+    gm.ui.label("Radius")                            # 1.1rem, inherited
+    gm.ui.math("A = \\pi r^2", font_size="1.5em")    # its own: bigger
+    with gm.ui.button("reset", font_size="0.8rem"):  # its own: smaller button
+        r = gm.scalar(3, out="r")
 ```
 
-`font_size` is a length in `px`, `rem`, `em` or `%` — never a spacing step,
-because that scale measures gaps. It **inherits**: set on a container it sizes
-every `label`, `math` and `button` inside, and an element that sets its own
-wins. The six controls keep their fixed sizes either way.
+### `align` and `align_self`
 
-`justify` is `"start"`, `"center"`, `"end"` or `"between"` (gaps pushed to the
-outside). It is the axis `align` does not cover: in a row, `align` moves the
-children up and down, `justify` moves them left and right.
+`align` on a `col` or `row` places its children across the stack: `"start"`,
+`"center"`, `"end"` or `"stretch"`. In a row that is up and down; in a column,
+left and right. `align_self` on one element overrides it for that element only.
+
+```python
+with gm.ui.col(gap=2, align="start"):                   # everything hugs the left
+    gm.ui.label("Settings")
+    r = gm.ui.slider(1, 5, value=3)
+    gm.ui.label("drag to resize", align_self="center")  # just this one centred
+```
+
+### `justify`
+
+On a `col` or `row` only. Places the children along the stack: `"start"`
+(default), `"center"`, `"end"` or `"between"` (first child at one end, last at
+the other). In a row that is left and right; in a column, up and down.
+
+```python
+# Buttons pushed to the right edge
+with gm.ui.row(gap=1, justify="end"):
+    with gm.ui.button("cancel"):
+        r = gm.scalar(3, out="r")
+    with gm.ui.button("apply"):
+        r = gm.scalar(5, out="r")
+
+# One at each end
+with gm.ui.row(justify="between"):
+    gm.ui.label("Radius")
+    gm.ui.label("${r}")
+```
+
+`justify` only shows when there is spare room along the stack. A row is usually
+as wide as the panel. A column is only as tall as its children, so give it a
+`height` first: `gm.ui.col(height="12rem", justify="between")`.
 
 ---
 
