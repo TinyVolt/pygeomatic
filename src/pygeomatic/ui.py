@@ -145,14 +145,27 @@ def _camel(name: str) -> str:
     return head + "".join(part.capitalize() for part in rest)
 
 
-def _sizing(width, height, grow, pad) -> dict:
-    """The four layout attributes every element accepts.
+def _sizing(width, height, grow, pad, font_size=None, align_self=None) -> dict:
+    """The layout attributes every element accepts.
 
     They ride on the wrapper cell the browser puts around each child, never
     inside the control, which is why the six control components did not have to
     change to gain them.
+
+    `font_size` is a length ("0.9rem", "14px", "1.2em", "90%") and inherits: on
+    a container it sizes the text of every label, formula and button inside.
+    `align_self` is this one element's cross-axis placement, overriding the
+    `align` of the row or column holding it. Both use the schema's spelling,
+    which is what the browser reads back.
     """
-    return {"width": width, "height": height, "grow": grow, "pad": pad}
+    return {
+        "width": width,
+        "height": height,
+        "grow": grow,
+        "pad": pad,
+        "fontSize": font_size,
+        "alignSelf": align_self,
+    }
 
 
 def _register(node: GNode, kind: str, options: dict, sizing: Optional[dict] = None) -> None:
@@ -188,7 +201,8 @@ def _register(node: GNode, kind: str, options: dict, sizing: Optional[dict] = No
 
     if sizing and any(value is not None for value in sizing.values()):
         raise UIError(
-            f"gm.ui.{kind} was given layout (width/height/grow/pad) but is not "
+            f"gm.ui.{kind} was given layout (width/height/grow/pad/font_size/"
+            f"align_self) but is not "
             "inside a `with gm.ui.col():` block. An inline control sits in a "
             "sentence and takes its size from the text around it."
         )
@@ -244,6 +258,8 @@ def slider(
     height=None,
     grow=None,
     pad=None,
+    font_size=None,
+    align_self=None,
 ) -> "GNode":
     """A slider over [start, stop] driving a new Scalar node.
 
@@ -286,7 +302,7 @@ def slider(
             "label": label,
             "show-value": show_value,
         },
-        _sizing(width, height, grow, pad),
+        _sizing(width, height, grow, pad, font_size, align_self),
     )
     return node
 
@@ -299,6 +315,8 @@ def checkbox(
     height=None,
     grow=None,
     pad=None,
+    font_size=None,
+    align_self=None,
 ) -> "GNode":
     """A tick box driving a new Bool node.
 
@@ -321,7 +339,7 @@ def checkbox(
         node,
         "checkbox",
         {"initial-value": value, "label": label},
-        _sizing(width, height, grow, pad),
+        _sizing(width, height, grow, pad, font_size, align_self),
     )
     return node
 
@@ -337,6 +355,8 @@ def number(
     height=None,
     grow=None,
     pad=None,
+    font_size=None,
+    align_self=None,
 ) -> "GNode":
     """A typed number box driving a new Scalar node.
 
@@ -375,7 +395,7 @@ def number(
             "step": step,
             "label": label,
         },
-        _sizing(width, height, grow, pad),
+        _sizing(width, height, grow, pad, font_size, align_self),
     )
     return node
 
@@ -445,6 +465,8 @@ def dropdown(
     height=None,
     grow=None,
     pad=None,
+    font_size=None,
+    align_self=None,
 ) -> "GNode":
     """A drop-down of `options` driving a new node holding the chosen one.
 
@@ -453,7 +475,7 @@ def dropdown(
     Compare it with `gm.cond.eq(mode, "sum")` or `gm.cond.eq(n, 1)` to gate
     prose on the choice.
     """
-    return _choice("dropdown", options, value, label, _sizing(width, height, grow, pad))
+    return _choice("dropdown", options, value, label, _sizing(width, height, grow, pad, font_size, align_self))
 
 
 def radio(
@@ -465,12 +487,14 @@ def radio(
     height=None,
     grow=None,
     pad=None,
+    font_size=None,
+    align_self=None,
 ) -> "GNode":
     """Radio buttons over `options`, driving a new node. Same as `dropdown` but
     with every choice visible at once — better for two or three options the
     reader should be able to see without clicking. An all-number list makes a
     Scalar node, an all-string list a Text node."""
-    return _choice("radio", options, value, label, _sizing(width, height, grow, pad))
+    return _choice("radio", options, value, label, _sizing(width, height, grow, pad, font_size, align_self))
 
 
 def text(
@@ -482,6 +506,8 @@ def text(
     height=None,
     grow=None,
     pad=None,
+    font_size=None,
+    align_self=None,
 ) -> "GNode":
     """A free-text box driving a new Text node."""
     from .functions.implementations.basic_figures import text as _text_node
@@ -498,7 +524,7 @@ def text(
         node,
         "text",
         {"initial-value": value, "label": label, "placeholder": placeholder},
-        _sizing(width, height, grow, pad),
+        _sizing(width, height, grow, pad, font_size, align_self),
     )
     return node
 
@@ -517,7 +543,18 @@ def text(
 # that bookkeeping.
 
 
-def col(gap: int = 0, align: str = "stretch", *, width=None, height=None, grow=None, pad=None):
+def col(
+    gap: int = 0,
+    align: str = "stretch",
+    justify: str = "start",
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
+    font_size=None,
+    align_self=None,
+):
     """Stack the block's elements vertically.
 
         with gm.ui.col(gap=2):
@@ -526,13 +563,41 @@ def col(gap: int = 0, align: str = "stretch", *, width=None, height=None, grow=N
 
     `gap` and `pad` are steps on the site's spacing scale, not pixels. The
     outermost container is where the panel appears in the article.
+
+    `align` places the children across the column (left to right), `justify`
+    along it (top to bottom): "start", "center", "end", or "between" to push
+    the gaps to the outside.
     """
-    return container("col", {"gap": gap, "align": align}, _sizing(width, height, grow, pad))
+    return container(
+        "col",
+        {"gap": gap, "align": align, "justify": justify},
+        _sizing(width, height, grow, pad, font_size, align_self),
+    )
 
 
-def row(gap: int = 0, align: str = "center", *, width=None, height=None, grow=None, pad=None):
-    """Stack the block's elements horizontally. Wraps when it runs out of width."""
-    return container("row", {"gap": gap, "align": align}, _sizing(width, height, grow, pad))
+def row(
+    gap: int = 0,
+    align: str = "center",
+    justify: str = "start",
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
+    font_size=None,
+    align_self=None,
+):
+    """Stack the block's elements horizontally. Wraps when it runs out of width.
+
+    `align` places the children across the row (top to bottom), `justify` along
+    it: `justify="end"` pushes a pair of buttons to the right edge,
+    `justify="between"` sends one to each end.
+    """
+    return container(
+        "row",
+        {"gap": gap, "align": align, "justify": justify},
+        _sizing(width, height, grow, pad, font_size, align_self),
+    )
 
 
 def box(
@@ -543,16 +608,27 @@ def box(
     height=None,
     grow=None,
     pad=None,
+    font_size=None,
+    align_self=None,
 ):
     """A padded container, optionally with a border and a surface behind it."""
     return container(
         "box",
         {"border": border, "background": background},
-        _sizing(width, height, grow, pad),
+        _sizing(width, height, grow, pad, font_size, align_self),
     )
 
 
-def label(text: str, *, width=None, height=None, grow=None, pad=None) -> None:
+def label(
+    text: str,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
+    font_size=None,
+    align_self=None,
+) -> None:
     """Plain text inside a tree.
 
     `${node}` interpolates a live value, the same readout `f"{r}"` produces in
@@ -562,22 +638,54 @@ def label(text: str, *, width=None, height=None, grow=None, pad=None) -> None:
 
     Deliberately NOT markdown: formatting it would mean running the article
     pipeline recursively inside an element. Use `gm.ui.math` for a formula.
+
+    `font_size` sets its text size ("0.75rem", "1.2em"); on the container above
+    it, one setting sizes every label inside.
     """
-    add_element(build_element("label", {"text": text}, _sizing(width, height, grow, pad)))
+    add_element(
+        build_element(
+            "label",
+            {"text": text},
+            _sizing(width, height, grow, pad, font_size, align_self),
+        )
+    )
 
 
-def math(latex: str, id: Optional[str] = None, *, width=None, height=None, grow=None, pad=None) -> None:
+def math(
+    latex: str,
+    id: Optional[str] = None,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
+    font_size=None,
+    align_self=None,
+) -> None:
     """A KaTeX formula inside a tree.
 
     Give it an `id` to address it from `gm.tex(id)`, exactly as a `%id:` line
     does for a formula written in the prose.
     """
     add_element(
-        build_element("math", {"latex": latex, "id": id}, _sizing(width, height, grow, pad))
+        build_element(
+            "math",
+            {"latex": latex, "id": id},
+            _sizing(width, height, grow, pad, font_size, align_self),
+        )
     )
 
 
-def button(label: str, *, width=None, height=None, grow=None, pad=None):
+def button(
+    label: str,
+    *,
+    width=None,
+    height=None,
+    grow=None,
+    pad=None,
+    font_size=None,
+    align_self=None,
+):
     """Run the block's commands when the reader presses this button.
 
         with gm.ui.row():
@@ -593,6 +701,9 @@ def button(label: str, *, width=None, height=None, grow=None, pad=None):
     The commands are NOT written into the prose as a `{}(cmd)` span, because
     command links are numbered by document position and a button's span would
     renumber every link after it.
+
+    `font_size` sets the label's text size ("1.1rem", "0.85em"); the padding is
+    in `em`, so the whole button grows with it.
     """
     if not in_tree():
         raise UITreeError(
@@ -608,7 +719,7 @@ def button(label: str, *, width=None, height=None, grow=None, pad=None):
         index += 1
     action = f"btn-{index}"
     element = build_element(
-        "button", {"label": label, "action": action}, _sizing(width, height, grow, pad)
+        "button", {"label": label, "action": action}, _sizing(width, height, grow, pad, font_size, align_self)
     )
 
     @contextmanager

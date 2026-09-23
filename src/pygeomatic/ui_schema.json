@@ -17,14 +17,26 @@
   ],
 
   "sizing": {
-    "_comment": "Accepted on every tag, applied by the tree's wrapper cell, never by the leaf components.",
+    "_comment": [
+      "Every tag accepts these. They are applied to the wrapper around the element.",
+      "",
+      "alignSelf: named this way because col and row already have an `align`.",
+      "",
+      "fontSize: also applies to everything inside a container. Affects label, math",
+      "and button only; the six controls keep their own sizes."
+    ],
     "width": { "type": "size" },
     "height": { "type": "size" },
     "grow": { "type": "number" },
-    "pad": { "type": "space" }
+    "pad": { "type": "space" },
+    "fontSize": { "type": "fontsize" },
+    "alignSelf": { "type": "enum", "values": ["start", "center", "end", "stretch"] }
   },
 
   "sizeUnits": ["px", "ch", "%", "rem"],
+
+  "_fontUnits": "A font size is always relative or absolute type, never a spacing step, so it takes its own units.",
+  "fontUnits": ["px", "rem", "em", "%"],
 
   "tags": {
     "col": {
@@ -32,7 +44,8 @@
       "doc": "Stack children vertically.",
       "attrs": {
         "gap": { "type": "space", "default": 0 },
-        "align": { "type": "enum", "values": ["start", "center", "end", "stretch"], "default": "stretch" }
+        "align": { "type": "enum", "values": ["start", "center", "end", "stretch"], "default": "stretch" },
+        "justify": { "type": "enum", "values": ["start", "center", "end", "between"], "default": "start" }
       }
     },
     "row": {
@@ -40,7 +53,8 @@
       "doc": "Stack children horizontally.",
       "attrs": {
         "gap": { "type": "space", "default": 0 },
-        "align": { "type": "enum", "values": ["start", "center", "end", "stretch"], "default": "center" }
+        "align": { "type": "enum", "values": ["start", "center", "end", "stretch"], "default": "center" },
+        "justify": { "type": "enum", "values": ["start", "center", "end", "between"], "default": "start" }
       }
     },
     "box": {

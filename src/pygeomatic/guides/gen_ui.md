@@ -230,6 +230,34 @@ same guard, so neither can interleave with a link sequence or with narration.
 
 ---
 
+## Layout, on any element
+
+Every element takes `width`, `height`, `grow`, `pad`, `font_size` and
+`align_self`. `col` and `row` also take `gap`, `align` (across the stack) and
+`justify` (along it).
+
+```python
+with gm.ui.col(gap=2, pad=2, font_size="1.1rem"):   # sizes the whole panel
+    gm.ui.label("Radius", align_self="center")      # just this one, centred
+    r = gm.ui.slider(1, 5, value=3, grow=1)
+    gm.ui.math("A = \\pi r^2", font_size="1.4em")   # bigger than its neighbours
+
+    with gm.ui.row(gap=1, justify="end"):           # buttons on the right edge
+        with gm.ui.button("reset", font_size="0.8rem"):
+            r = gm.scalar(3, out="r")
+```
+
+`font_size` is a length in `px`, `rem`, `em` or `%` — never a spacing step,
+because that scale measures gaps. It **inherits**: set on a container it sizes
+every `label`, `math` and `button` inside, and an element that sets its own
+wins. The six controls keep their fixed sizes either way.
+
+`justify` is `"start"`, `"center"`, `"end"` or `"between"` (gaps pushed to the
+outside). It is the axis `align` does not cover: in a row, `align` moves the
+children up and down, `justify` moves them left and right.
+
+---
+
 ## Common errors
 
 Each of these should fail the compile with a line number, not render something
@@ -245,6 +273,9 @@ gm.ui.label("a", width="calc(100% - 3px)")
 
 # a spacing step off the scale (0-9)
 gm.ui.col(gap=42)
+
+# a spacing step as a font size — refused; that scale measures gaps
+gm.ui.label("a", font_size=2)
 
 # layout on an INLINE control: a sentence decides its size
 r = gm.ui.slider(1, 5, width="12ch")
