@@ -154,9 +154,9 @@ def test_every_ui_constructor_has_a_tag(ui_schema):
 
 def test_the_sizing_attributes_are_shared_by_every_tag(ui_schema):
     """Uniform sizing is the discipline that stops the schema bloating: no tag
-    may redefine width/height/grow/pad as something of its own."""
+    may redefine one of these as something of its own."""
     shared = {a for a in ui_schema["sizing"] if not a.startswith("_")}
-    assert shared == {"width", "height", "grow", "pad"}
+    assert shared == {"width", "height", "grow", "pad", "fontSize", "alignSelf"}
     for tag, spec in ui_schema["tags"].items():
         if tag.startswith("_"):
             continue

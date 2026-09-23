@@ -133,6 +133,32 @@ def _check_size(where: str, name: str, value):
     )
 
 
+def _check_font_size(where: str, name: str, value):
+    """A `fontsize`: a positive length in one of the font units.
+
+    A spacing step is not one of them — the spacing scale measures gaps, and a
+    number here would silently mean something it does not mean.
+    """
+    units = _schema()["fontUnits"]
+    if not isinstance(value, str):
+        raise UITreeError(
+            f'{where}.{name} must be a length like "0.9rem" or "14px", got {value!r}'
+        )
+    for unit in units:
+        if value.endswith(unit):
+            head = value[: -len(unit)]
+            try:
+                size = float(head)
+            except ValueError:
+                break
+            if size <= 0:
+                raise UITreeError(f"{where}.{name} must be positive, got {value!r}")
+            return value
+    raise UITreeError(
+        f"{where}.{name} must use one of {', '.join(units)} — got {value!r}"
+    )
+
+
 def _check_attr(where: str, name: str, spec: dict, value):
     kind = spec["type"]
 
@@ -154,6 +180,9 @@ def _check_attr(where: str, name: str, spec: dict, value):
 
     if kind == "size":
         return _check_size(where, name, value)
+
+    if kind == "fontsize":
+        return _check_font_size(where, name, value)
 
     if kind == "string":
         if not isinstance(value, str):
@@ -198,8 +227,8 @@ def build_element(tag: str, attrs: dict, sizing: dict) -> dict:
     """Validate one element's attributes and return it, ready for the manifest.
 
     `attrs` uses the schema's names (camelCase, matching the browser); `sizing`
-    holds the four layout attributes every tag accepts. `None` values are
-    dropped so an omitted keyword is indistinguishable from one never written.
+    holds the layout attributes every tag accepts. `None` values are dropped so
+    an omitted keyword is indistinguishable from one never written.
     """
     schema = _schema()
     tags = _real(schema["tags"])
