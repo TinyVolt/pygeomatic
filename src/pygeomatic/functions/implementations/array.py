@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from ...nodes import NODE_CLASSES, Array, GNode, Scalar, Unknown
 from ...registry import P, geomatic_fn
-from ..helpers import fint, fnum
+import random
+
+import numpy as np
+
+from ..helpers import fint, fnum, mulberry32
 
 CATEGORY = "Arrays"
 
@@ -56,6 +60,48 @@ def get_array_element(arr, index):
     # The DSL assigns the element to a NEW node id — clone so the output node
     # gets its own identity without re-referencing the source element.
     return arr._elements[i].model_copy()
+
+
+@geomatic_fn(
+    keyword="shuffle",
+    name="Shuffle",
+    output="Array",
+    params=[
+        P("array", "Array"),
+        P("key", "Scalar", default=-1),
+        P("axis", "Scalar", default=0),
+    ],
+    category=CATEGORY,
+    broadcasts=False,
+)
+def shuffle(arr, key, axis):
+    if not isinstance(arr, Array):
+        return Unknown._new()
+    shape = arr._shape
+    if shape is None:
+        return Array._new(element_type=arr._element_type, elements=[], shape_unknown=True)
+    ax = fint(axis)
+    if ax is not None and (ax < 0 or ax >= len(shape)):
+        raise ValueError(f"shuffle: axis {ax} out of range for array of shape {list(shape)}")
+    k = fnum(key)
+    if ax is None or k is None or len(arr._elements) != arr._length():
+        return Array._new(element_type=arr._element_type, elements=[], shape=shape)
+
+    uniform = random.random if k < 0 else mulberry32(k)
+    n = shape[ax]
+    perm = list(range(n))
+    for i in range(n - 1, 0, -1):
+        j = int(uniform() * (i + 1))
+        perm[i], perm[j] = perm[j], perm[i]
+
+    inner = int(np.prod(shape[ax + 1 :]))
+    outer = int(np.prod(shape[:ax]))
+    elements: list[GNode] = []
+    for o in range(outer):
+        for j in range(n):
+            start = (o * n + perm[j]) * inner
+            elements.extend(arr._elements[start : start + inner])
+    return Array._new(element_type=arr._element_type, elements=elements, shape=shape)
 
 
 def _empty_element(element_type) -> GNode:

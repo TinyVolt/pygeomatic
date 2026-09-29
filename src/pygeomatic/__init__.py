@@ -254,7 +254,7 @@ from .functions.implementations.tensor_functions import (  # noqa: F401
     zeros,
     zeros_like,
 )
-from .functions.implementations.array import array, get_array_element  # noqa: F401
+from .functions.implementations.array import array, get_array_element, shuffle  # noqa: F401
 from .functions.implementations.translation_functions import (  # noqa: F401
     animate,
     translate,

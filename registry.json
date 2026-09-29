@@ -3357,6 +3357,38 @@
     "operandTypes": null
   },
   {
+    "keyword": "shuffle",
+    "name": "Shuffle",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "key",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      },
+      {
+        "name": "axis",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Arrays",
+    "operandTypes": null
+  },
+  {
     "keyword": "sigmoid",
     "name": "Sigmoid",
     "parameters": [

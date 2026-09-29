@@ -199,7 +199,7 @@ NON_BROADCASTING = {
     "array", "get-array-element", "fft", "ifft", "filter",
     "reduce-sum", "reduce-min", "reduce-max", "reduce-mean", "reduce-std",
     "reduce-var", "softmax", "reshape", "linspace", "cumsum", "arange",
-    "circular-arange", "ones", "zeros", "ones-like", "zeros-like",
+    "circular-arange", "ones", "zeros", "ones-like", "zeros-like", "shuffle",
     # imperative, no broadcast in the engine either
     "clear", "highlight", "hide", "show", "copy", "remove", "help",
     "clear-trail", "gradient-descent-step", "param", "backprop",

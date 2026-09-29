@@ -7,7 +7,8 @@ when a value is unknown — implementations then produce record-only nodes.
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+import math
+from typing import Callable, Optional, Sequence
 
 import numpy as np
 
@@ -32,6 +33,23 @@ def fnum(x) -> Optional[float]:
 def fint(x) -> Optional[int]:
     v = fnum(x)
     return None if v is None else int(np.floor(v))
+
+
+def mulberry32(seed: float) -> Callable[[], float]:
+    """Mirror of utils.ts `mulberry32(seed >>> 0)`: same uniform [0, 1) stream."""
+    a = int(seed) & 0xFFFFFFFF if math.isfinite(seed) else 0
+
+    def imul(x: int, y: int) -> int:
+        return (x * y) & 0xFFFFFFFF
+
+    def uniform() -> float:
+        nonlocal a
+        a = (a + 0x6D2B79F5) & 0xFFFFFFFF
+        t = imul(a ^ (a >> 15), 1 | a)
+        t = ((t + imul(t ^ (t >> 7), 61 | t)) & 0xFFFFFFFF) ^ t
+        return (t ^ (t >> 14)) / 4294967296
+
+    return uniform
 
 
 def fxy(p) -> Optional[tuple[float, float]]:
