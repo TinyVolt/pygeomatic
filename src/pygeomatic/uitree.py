@@ -203,7 +203,7 @@ def build_element(tag: str, attrs: dict, sizing: dict) -> dict:
         element[name] = _check_attr(tag, name, shared[name], value)
 
     for name, attr_spec in allowed.items():
-        if name in attrs and attrs[name] is not None:
+        if name in attrs and (attrs[name] is not None or name == "initialValue"):
             element[name] = _check_attr(tag, name, attr_spec, attrs[name])
         elif attr_spec.get("required"):
             raise UITreeError(f"gm.ui.{tag} needs {name}")

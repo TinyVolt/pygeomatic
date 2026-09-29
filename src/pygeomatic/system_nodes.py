@@ -119,6 +119,13 @@ SYSTEM_NODES: list[SystemNode] = [
         reserve=True,
     ),
     SystemNode(
+        "NaN",
+        lambda: Scalar._new(float("nan")),
+        doc="A Scalar whose value is NaN, referenceable by id wherever a Scalar "
+        "argument is expected.",
+        reserve=True,
+    ),
+    SystemNode(
         "with-numeric-mode",
         lambda: Bool._new(False),
         doc="Whether the canvas math runs on plain numbers instead of tensors "

@@ -28,6 +28,9 @@ class UIError(ValueError):
     """A gm.ui control could not be created."""
 
 
+_FIRST_OPTION = object()
+
+
 # Types that interpolate as their value in article strings; others print their id.
 READOUT_TYPES = frozenset({"Scalar", "Text", "Bool"})
 
@@ -52,7 +55,7 @@ def render_widget_html(spec: dict) -> str:
     attrs = " ".join(
         _attr(name, value)
         for name, value in options.items()
-        if value is not None
+        if value is not None or name == "initial-value"
     )
     return (
         f'<span class="nova-ui" data-kind="{spec["kind"]}" '
@@ -342,21 +345,27 @@ def _choice(kind: str, options, value, label, display=None, sizing=None):
 
     choices, mode, attr = _choice_options(options, kind)
     display = _check_display(display, options, kind)
-    value = _plain(value, kind, "value", (Scalar, Text))
-    if value is None:
+    if value is _FIRST_OPTION:
         if not choices:
             raise UIError(f"gm.ui.{kind} options array has no known value; pass value= explicitly")
         initial = choices[0]
+    elif value is None:
+        initial = None
     else:
+        value = _plain(value, kind, "value", (Scalar, Text))
         initial = float(value) if mode == "scalar" else value
-    unselected = kind == "radio" and mode == "text" and initial == ""
+    unselected = initial is None or (kind == "radio" and mode == "text" and initial == "")
     if choices and initial not in choices and not unselected:
         raise UIError(
             f"gm.ui.{kind} value {initial!r} is not one of the options {choices!r}"
         )
     _check_label(label, kind)
 
-    node = scalar(initial) if mode == "scalar" else _text_node(initial)
+    if mode == "scalar":
+        node = scalar(current_store().nodes["NaN"] if initial is None else initial)
+    else:
+        initial = "" if initial is None else initial
+        node = _text_node(initial)
     _register(
         node,
         kind,
@@ -368,7 +377,7 @@ def _choice(kind: str, options, value, label, display=None, sizing=None):
 
 def dropdown(
     options: Union[Sequence[Union[str, float, Scalar, Text]], Array],
-    value: Optional[Union[str, float, Scalar, Text]] = None,
+    value: Optional[Union[str, float, Scalar, Text]] = _FIRST_OPTION,
     label: Optional[str] = None,
     display: Optional[Sequence[str]] = None,
     *,
@@ -380,13 +389,15 @@ def dropdown(
     align_self=None,
 ) -> "GNode":
     """A drop-down driving a new node: Text for string options, Scalar for numbers.
-    `display` is the text shown for each option; the node still holds the option."""
+    `display` is the text shown for each option; the node still holds the option.
+    Leaving out `value` selects the first option. `value=None` starts with nothing
+    selected: the node holds "" for string options, NaN for numbers."""
     return _choice("dropdown", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self))
 
 
 def radio(
     options: Union[Sequence[Union[str, float, Scalar, Text]], Array],
-    value: Optional[Union[str, float, Scalar, Text]] = None,
+    value: Optional[Union[str, float, Scalar, Text]] = _FIRST_OPTION,
     label: Optional[str] = None,
     display: Optional[Sequence[str]] = None,
     *,
@@ -397,8 +408,8 @@ def radio(
     font_size=None,
     align_self=None,
 ) -> "GNode":
-    """Radio buttons, otherwise like `dropdown`. With string options, `value=""`
-    starts with nothing selected."""
+    """Radio buttons, otherwise like `dropdown`. `value=None` starts with nothing
+    selected; with string options, so does `value=""`."""
     return _choice("radio", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self))
 
 
