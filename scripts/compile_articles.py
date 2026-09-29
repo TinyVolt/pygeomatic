@@ -14,11 +14,27 @@ this is the CI gate behind the `TinyVolt/pygeomatic` GitHub Action.
 """
 
 import argparse
+import re
 import shutil
 import sys
 from pathlib import Path
 
 from pygeomatic import run_article
+
+_FRONTMATTER = re.compile(r"\A\ufeff?---[ \t]*\r?\n(?:([\s\S]*?)\r?\n)?---[ \t]*(?:\r?\n|\Z)")
+_FIELD = re.compile(r"^\s*([\w-]+)\s*:\s*(.*?)\s*$")
+
+
+def frontmatter_extensions(markdown: str) -> list[str]:
+    match = _FRONTMATTER.match(markdown)
+    if not match:
+        return []
+    value = ""
+    for line in (match.group(1) or "").splitlines():
+        field = _FIELD.match(line)
+        if field and field.group(1) == "extensions":
+            value = re.sub(r"^(['\"])(.*)\1$", r"\2", field.group(2))
+    return list(dict.fromkeys(u.strip() for u in value.split(",") if u.strip()))
 
 
 def main() -> int:
@@ -68,9 +84,10 @@ def main() -> int:
         if path.suffix != ".md":
             shutil.copy2(path, dst)
             continue
+        text = path.read_text()
         result = run_article(
-            path.read_text(),
-            extensions=args.ext,
+            text,
+            extensions=list(dict.fromkeys([*args.ext, *frontmatter_extensions(text)])),
             macros=args.macros,
             allow_coercions=args.allow_coercions,
         )
