@@ -82,7 +82,9 @@ def flash_card(data: str) -> str:
             "            with gm.ui.box(border=True, pad=2):",
             f"                gm.ui.label({_q(f'Question {n} of {total}')})",
             f"                gm.ui.label({_q(question)})",
-            f"                answer_{n} = gm.ui.radio([{', '.join(_q(o) for o in options)}], value=\"\", label=\"Choose an answer\")",
+            f"                choices_{n} = gm.array({', '.join(f'gm.text({_q(o)})' for o in options)}, out={_q(f'choices-{n}')})",
+            f"                options_{n} = gm.shuffle(choices_{n}, out={_q(f'options-{n}')})",
+            f"                answer_{n} = gm.ui.radio(options_{n}, value=\"\", label=\"Choose an answer\")",
         ]
         if hint:
             lines += [
@@ -106,6 +108,7 @@ def flash_card(data: str) -> str:
     for var, node_id in zip(done, done_ids):
         lines.append(f"                    {var} = gm.bool_(False, out={_q(node_id)})")
     for n, (_, _, hint, _) in enumerate(cards, start=1):
+        lines.append(f"                    options_{n} = gm.shuffle(choices_{n}, out={_q(f'options-{n}')})")
         lines.append(f"                    answer_{n} = gm.text(\"\", out={_q(f'answer-{n}')})")
         if hint:
             lines.append(f"                    hint_{n} = gm.bool_(False, out={_q(f'hint-{n}')})")
