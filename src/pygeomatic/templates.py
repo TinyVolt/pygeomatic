@@ -105,6 +105,10 @@ def flash_card(data: str) -> str:
     ]
     for var, node_id in zip(done, done_ids):
         lines.append(f"                    {var} = gm.bool_(False, out={_q(node_id)})")
+    for n, (_, _, hint, _) in enumerate(cards, start=1):
+        lines.append(f"                    answer_{n} = gm.text(\"\", out={_q(f'answer-{n}')})")
+        if hint:
+            lines.append(f"                    hint_{n} = gm.bool_(False, out={_q(f'hint-{n}')})")
 
     code = "\n".join(lines)
     return (
