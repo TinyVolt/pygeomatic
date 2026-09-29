@@ -129,6 +129,7 @@ from .onpageload import (  # noqa: F401
 )
 from . import ui  # noqa: F401  — gm.ui.slider(...), gm.ui.onclick(node), ...
 from .ui import UIError, render_widget_html  # noqa: F401
+from . import templates  # noqa: F401  — gm.templates.flash_card(data), ...
 
 
 def __getattr__(name: str) -> GNode:
