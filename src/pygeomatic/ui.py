@@ -440,7 +440,8 @@ def _choice(kind: str, options, value, label, sizing=None):
         initial = choices[0]
     else:
         initial = float(value) if mode == "scalar" else value
-    if initial not in choices:
+    unselected = kind == "radio" and mode == "text" and initial == ""
+    if initial not in choices and not unselected:
         raise UIError(
             f"gm.ui.{kind} value {initial!r} is not one of the options {choices!r}"
         )
@@ -493,7 +494,10 @@ def radio(
     """Radio buttons over `options`, driving a new node. Same as `dropdown` but
     with every choice visible at once — better for two or three options the
     reader should be able to see without clicking. An all-number list makes a
-    Scalar node, an all-string list a Text node."""
+    Scalar node, an all-string list a Text node.
+
+    With string options, `value=""` starts with nothing selected; the node
+    holds "" until the reader picks one."""
     return _choice("radio", options, value, label, _sizing(width, height, grow, pad, font_size, align_self))
 
 
