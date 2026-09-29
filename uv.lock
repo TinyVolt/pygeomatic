@@ -190,7 +190,7 @@ wheels = [
 
 [[package]]
 name = "pygeomatic"
-version = "0.7.4"
+version = "0.8"
 source = { editable = "." }
 dependencies = [
     { name = "numpy" },
