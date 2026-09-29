@@ -142,7 +142,8 @@
         "node": { "type": "identifier", "required": true },
         "options": { "type": "options", "required": true },
         "initialValue": { "type": "any" },
-        "label": { "type": "string" }
+        "label": { "type": "string" },
+        "display": { "type": "any" }
       }
     },
     "radio": {
@@ -153,7 +154,8 @@
         "node": { "type": "identifier", "required": true },
         "options": { "type": "options", "required": true },
         "initialValue": { "type": "any" },
-        "label": { "type": "string" }
+        "label": { "type": "string" },
+        "display": { "type": "any" }
       }
     },
     "text": {

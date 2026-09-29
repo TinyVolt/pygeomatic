@@ -322,11 +322,26 @@ def _choice_options(options, kind: str) -> tuple[list, str, object]:
     return choices, mode, choices
 
 
-def _choice(kind: str, options, value, label, sizing=None):
+def _check_display(display, options, kind: str) -> Optional[list]:
+    if display is None:
+        return None
+    if not isinstance(display, (list, tuple)) or not all(isinstance(d, str) for d in display):
+        raise UIError(f"gm.ui.{kind} display must be a list of strings, got {display!r}")
+    count = len(options._elements) if isinstance(options, Array) else len(options)
+    if len(display) != count:
+        raise UIError(
+            f"gm.ui.{kind} display has {len(display)} entries but there are "
+            f"{count} options; they must be the same length"
+        )
+    return list(display)
+
+
+def _choice(kind: str, options, value, label, display=None, sizing=None):
     from .functions.implementations.basic_figures import scalar
     from .functions.implementations.basic_figures import text as _text_node
 
     choices, mode, attr = _choice_options(options, kind)
+    display = _check_display(display, options, kind)
     value = _plain(value, kind, "value", (Scalar, Text))
     if value is None:
         if not choices:
@@ -345,7 +360,7 @@ def _choice(kind: str, options, value, label, sizing=None):
     _register(
         node,
         kind,
-        {"initial-value": initial, "options": attr, "label": label},
+        {"initial-value": initial, "options": attr, "label": label, "display": display},
         sizing,
     )
     return node
@@ -355,6 +370,7 @@ def dropdown(
     options: Union[Sequence[Union[str, float, Scalar, Text]], Array],
     value: Optional[Union[str, float, Scalar, Text]] = None,
     label: Optional[str] = None,
+    display: Optional[Sequence[str]] = None,
     *,
     width=None,
     height=None,
@@ -363,14 +379,16 @@ def dropdown(
     font_size=None,
     align_self=None,
 ) -> "GNode":
-    """A drop-down driving a new node: Text for string options, Scalar for numbers."""
-    return _choice("dropdown", options, value, label, _sizing(width, height, grow, pad, font_size, align_self))
+    """A drop-down driving a new node: Text for string options, Scalar for numbers.
+    `display` is the text shown for each option; the node still holds the option."""
+    return _choice("dropdown", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self))
 
 
 def radio(
     options: Union[Sequence[Union[str, float, Scalar, Text]], Array],
     value: Optional[Union[str, float, Scalar, Text]] = None,
     label: Optional[str] = None,
+    display: Optional[Sequence[str]] = None,
     *,
     width=None,
     height=None,
@@ -381,7 +399,7 @@ def radio(
 ) -> "GNode":
     """Radio buttons, otherwise like `dropdown`. With string options, `value=""`
     starts with nothing selected."""
-    return _choice("radio", options, value, label, _sizing(width, height, grow, pad, font_size, align_self))
+    return _choice("radio", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self))
 
 
 def text(
