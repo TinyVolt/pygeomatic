@@ -187,7 +187,7 @@ def flash_card(data: str) -> str:
         "with gm.onpageload():",
         *setups,
         "",
-        "    with gm.ui.col(gap=3, pad=2):",
+        "    with gm.ui.col(gap=3, pad=2, max_width=\"40rem\"):",
         "\n\n".join(blocks),
         "",
         final,

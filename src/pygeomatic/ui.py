@@ -70,11 +70,26 @@ def _camel(name: str) -> str:
     return head + "".join(part.capitalize() for part in rest)
 
 
-def _sizing(width, height, grow, pad, font_size=None, align_self=None) -> dict:
+def _sizing(
+    width,
+    height,
+    grow,
+    pad,
+    font_size=None,
+    align_self=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
+) -> dict:
     """The layout attributes every element accepts, in the schema's spelling."""
     return {
         "width": width,
         "height": height,
+        "minWidth": min_width,
+        "maxWidth": max_width,
+        "minHeight": min_height,
+        "maxHeight": max_height,
         "grow": grow,
         "pad": pad,
         "fontSize": font_size,
@@ -109,8 +124,8 @@ def _register(node: GNode, kind: str, options: dict, sizing: Optional[dict] = No
 
     if sizing and any(value is not None for value in sizing.values()):
         raise UIError(
-            f"gm.ui.{kind} was given layout (width/height/grow/pad/font_size/"
-            f"align_self) but is not "
+            f"gm.ui.{kind} was given layout (width/height/min_width/max_width/"
+            f"min_height/max_height/grow/pad/font_size/align_self) but is not "
             "inside a `with gm.ui.col():` block. An inline control sits in a "
             "sentence and takes its size from the text around it."
         )
@@ -159,6 +174,10 @@ def slider(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -201,7 +220,7 @@ def slider(
             "label": label,
             "show-value": show_value,
         },
-        _sizing(width, height, grow, pad, font_size, align_self),
+        _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
     )
     return node
 
@@ -212,6 +231,10 @@ def checkbox(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -230,7 +253,7 @@ def checkbox(
         node,
         "checkbox",
         {"initial-value": value, "label": label},
-        _sizing(width, height, grow, pad, font_size, align_self),
+        _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
     )
     return node
 
@@ -244,6 +267,10 @@ def number(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -282,7 +309,7 @@ def number(
             "step": step,
             "label": label,
         },
-        _sizing(width, height, grow, pad, font_size, align_self),
+        _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
     )
     return node
 
@@ -394,6 +421,10 @@ def dropdown(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -403,7 +434,7 @@ def dropdown(
     `display` is the text shown for each option; the node still holds the option.
     Leaving out `value` selects the first option. `value=None` starts with nothing
     selected: the node holds "" for string options, NaN for numbers."""
-    return _choice("dropdown", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self))
+    return _choice("dropdown", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height))
 
 
 def radio(
@@ -414,6 +445,10 @@ def radio(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -421,7 +456,7 @@ def radio(
 ) -> "GNode":
     """Radio buttons, otherwise like `dropdown`. `value=None` starts with nothing
     selected; with string options, so does `value=""`."""
-    return _choice("radio", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self))
+    return _choice("radio", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height))
 
 
 def text(
@@ -431,6 +466,10 @@ def text(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -451,7 +490,7 @@ def text(
         node,
         "text",
         {"initial-value": value, "label": label, "placeholder": placeholder},
-        _sizing(width, height, grow, pad, font_size, align_self),
+        _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
     )
     return node
 
@@ -463,6 +502,10 @@ def col(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -472,7 +515,7 @@ def col(
     return container(
         "col",
         {"gap": gap, "align": align, "justify": justify},
-        _sizing(width, height, grow, pad, font_size, align_self),
+        _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
     )
 
 
@@ -483,6 +526,10 @@ def row(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -492,7 +539,7 @@ def row(
     return container(
         "row",
         {"gap": gap, "align": align, "justify": justify},
-        _sizing(width, height, grow, pad, font_size, align_self),
+        _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
     )
 
 
@@ -502,6 +549,10 @@ def box(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -511,7 +562,7 @@ def box(
     return container(
         "box",
         {"border": border, "background": background},
-        _sizing(width, height, grow, pad, font_size, align_self),
+        _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
     )
 
 
@@ -520,6 +571,10 @@ def label(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -530,7 +585,7 @@ def label(
         build_element(
             "label",
             {"text": text},
-            _sizing(width, height, grow, pad, font_size, align_self),
+            _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
         )
     )
 
@@ -541,6 +596,10 @@ def math(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -551,7 +610,7 @@ def math(
         build_element(
             "math",
             {"latex": latex, "id": id},
-            _sizing(width, height, grow, pad, font_size, align_self),
+            _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height),
         )
     )
 
@@ -561,6 +620,10 @@ def button(
     *,
     width=None,
     height=None,
+    min_width=None,
+    max_width=None,
+    min_height=None,
+    max_height=None,
     grow=None,
     pad=None,
     font_size=None,
@@ -579,7 +642,7 @@ def button(
         index += 1
     action = f"btn-{index}"
     element = build_element(
-        "button", {"label": label, "action": action}, _sizing(width, height, grow, pad, font_size, align_self)
+        "button", {"label": label, "action": action}, _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height)
     )
 
     @contextmanager
