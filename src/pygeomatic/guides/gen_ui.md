@@ -232,8 +232,8 @@ same guard, so neither can interleave with a link sequence or with narration.
 
 ## Layout, on any element
 
-Every element takes `width`, `height`, `grow`, `pad`, `font_size` and
-`align_self`. `col` and `row` also take `gap`, `align` (across the stack) and
+Every element takes `width`, `height`, `min_width`, `max_width`, `min_height`,
+`max_height`, `grow`, `pad`, `font_size` and `align_self`. `col` and `row` also take `gap`, `align` (across the stack) and
 `justify` (along it).
 
 ### `font_size`

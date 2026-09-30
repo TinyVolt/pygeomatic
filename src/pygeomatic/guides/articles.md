@@ -195,11 +195,11 @@ with gm.ui.box(border=True, pad=2):
   - `gm.ui.button(label)`: a `with` block whose commands run when pressed. The label
     renders `$...$` LaTeX;
   - `gm.when(...)`: shows the elements inside it only while the condition holds.
-- Every element also takes `width`, `height`, `grow`, `pad`, `font_size` and
-  `align_self` as keywords.
+- Every element also takes `width`, `height`, `min_width`, `max_width`,
+  `min_height`, `max_height`, `grow`, `pad`, `font_size` and `align_self` as keywords.
   - `gap` and `pad` are spacing steps from 0 to 9, not pixels.
-  - `width` and `height` are a step, `"fill"`, or a length in `px`, `ch`, `%` or `rem`,
-    such as `"12ch"`.
+  - `width`, `height` and their `min_`/`max_` forms are a step, `"fill"`, or a length
+    in `px`, `ch`, `%` or `rem`, such as `"12ch"`.
   - `font_size` is a length in `px`, `rem`, `em` or `%`, such as `"1.2rem"`. Never a
     step. On a container it sizes every label, formula and button inside; an element
     that sets its own wins. Controls keep their own size.
