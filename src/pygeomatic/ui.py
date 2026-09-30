@@ -455,7 +455,8 @@ def radio(
     align_self=None,
 ) -> "GNode":
     """Radio buttons, otherwise like `dropdown`. `value=None` starts with nothing
-    selected; with string options, so does `value=""`."""
+    selected; with string options, so does `value=""`. Each option's shown text
+    renders LaTeX in `$...$` or `\\(...\\)`; write `\\$` for a literal `$`."""
     return _choice("radio", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height))
 
 

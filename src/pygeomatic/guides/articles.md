@@ -100,8 +100,8 @@ Show it by putting it in a `gm.md` f-string.
 | `gm.ui.slider` | Scalar | `(start, stop, step=None, value=None, label=None, show_value=True)` |
 | `gm.ui.number` | Scalar | `(start=None, stop=None, value=None, step=None, label=None)` |
 | `gm.ui.checkbox` | Bool | `(value=False, label=None)` |
-| `gm.ui.dropdown` | Text or Scalar | `(options, value=None, label=None)` |
-| `gm.ui.radio` | Text or Scalar | `(options, value=None, label=None)` |
+| `gm.ui.dropdown` | Text or Scalar | `(options, value=None, label=None, display=None)` |
+| `gm.ui.radio` | Text or Scalar | `(options, value=None, label=None, display=None)` |
 | `gm.ui.text` | Text | `(value="", label=None, placeholder=None)` |
 
 ````markdown
@@ -124,6 +124,9 @@ gm.md(f"Drag to resize it: {r}")
   `value` inside the range.
 - `dropdown` and `radio` options must be distinct and either all strings (a Text node)
   or all numbers (a Scalar node).
+- A `radio` option's shown text (`display`, or the option itself) renders LaTeX in
+  `$...$` or `\(...\)`. Write `\$` for a literal `$`, e.g. `display=[r"\$5", r"$x^2$"]`.
+  A `dropdown` shows plain text only.
 - One control per node. Each control needs its own node.
 - The control's node is made by a hidden step, which only runs once the reader clicks
   a link after it. For a control that must work before any click, make it in
