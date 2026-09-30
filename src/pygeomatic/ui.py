@@ -589,7 +589,8 @@ def label(
     font_size=None,
     align_self=None,
 ) -> None:
-    """Plain text (not markdown) inside a tree. `${node}` interpolates a live value."""
+    """Plain text (not markdown) inside a tree. `${node}` interpolates a live value.
+    `$...$` or `\\(...\\)` renders LaTeX; write `\\$` for a literal `$`."""
     add_element(
         build_element(
             "label",
@@ -638,7 +639,8 @@ def button(
     font_size=None,
     align_self=None,
 ):
-    """Run the block's commands when the reader presses this button."""
+    """Run the block's commands when the reader presses this button. The label
+    renders LaTeX in `$...$` or `\\(...\\)`; write `\\$` for a literal `$`."""
     if not in_tree():
         raise UITreeError(
             "gm.ui.button needs an open container — put it inside a "

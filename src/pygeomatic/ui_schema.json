@@ -79,7 +79,7 @@
 
     "label": {
       "children": "none",
-      "doc": "Plain text. ${node} interpolates a live value. Not markdown.",
+      "doc": "Plain text with $...$ LaTeX. ${node} interpolates a live value. Not markdown.",
       "attrs": {
         "text": { "type": "string", "required": true }
       }
@@ -94,7 +94,7 @@
     },
     "button": {
       "children": "none",
-      "doc": "Runs DSL commands when pressed. `action` names an entry in the onclick manifest.",
+      "doc": "Runs DSL commands when pressed. `action` names an entry in the onclick manifest. The label renders $...$ LaTeX.",
       "attrs": {
         "label": { "type": "string", "required": true },
         "action": { "type": "identifier", "required": true }
@@ -153,7 +153,7 @@
     "radio": {
       "children": "none",
       "leaf": "radio",
-      "doc": "Like a dropdown, with every option on screen.",
+      "doc": "Like a dropdown, with every option on screen. vertical stacks the options in a column, label on top.",
       "attrs": {
         "node": { "type": "identifier", "required": true },
         "options": { "type": "options", "required": true },
