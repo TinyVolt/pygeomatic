@@ -14,5 +14,6 @@ One module per template.
 from ._common import TemplateError
 from .flash_card import flash_card
 from .flowchart import flowchart
+from .timeline import timeline
 
-__all__ = ["TemplateError", "flash_card", "flowchart"]
+__all__ = ["TemplateError", "flash_card", "flowchart", "timeline"]
