@@ -318,18 +318,28 @@ def _choice_options(options, kind: str) -> tuple[list, str, object]:
     return choices, mode, choices
 
 
-def _check_display(display, options, kind: str) -> Optional[list]:
+def _check_display(display, options, kind: str):
     if display is None:
         return None
-    if not isinstance(display, (list, tuple)) or not all(isinstance(d, str) for d in display):
-        raise UIError(f"gm.ui.{kind} display must be a list of strings, got {display!r}")
     count = len(options._elements) if isinstance(options, Array) else len(options)
-    if len(display) != count:
+    if isinstance(display, Array):
+        if not display.id or not IDENTIFIER_RE.match(display.id):
+            raise UIError(f"gm.ui.{kind} display array needs a plain identifier id, got {display.id!r}")
+        if display._element_type != "Text":
+            raise UIError(f"gm.ui.{kind} display array must hold Text nodes")
+        entries, attr = len(display._elements), {"node": display.id}
+    elif isinstance(display, (list, tuple)) and all(isinstance(d, str) for d in display):
+        entries, attr = len(display), list(display)
+    else:
         raise UIError(
-            f"gm.ui.{kind} display has {len(display)} entries but there are "
+            f"gm.ui.{kind} display must be a list of strings or an array of Text, got {display!r}"
+        )
+    if entries != count:
+        raise UIError(
+            f"gm.ui.{kind} display has {entries} entries but there are "
             f"{count} options; they must be the same length"
         )
-    return list(display)
+    return attr
 
 
 def _choice(kind: str, options, value, label, display=None, sizing=None):
@@ -380,7 +390,7 @@ def dropdown(
     options: Union[Sequence[Union[str, float, Scalar, Text]], Array],
     value: Optional[Union[str, float, Scalar, Text]] = _FIRST_OPTION,
     label: Optional[str] = None,
-    display: Optional[Sequence[str]] = None,
+    display: Optional[Union[Sequence[str], Array]] = None,
     *,
     width=None,
     height=None,
@@ -400,7 +410,7 @@ def radio(
     options: Union[Sequence[Union[str, float, Scalar, Text]], Array],
     value: Optional[Union[str, float, Scalar, Text]] = _FIRST_OPTION,
     label: Optional[str] = None,
-    display: Optional[Sequence[str]] = None,
+    display: Optional[Union[Sequence[str], Array]] = None,
     *,
     width=None,
     height=None,
