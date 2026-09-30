@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from ...nodes import (
     AngleMark,
+    Array,
     Arrow,
     CurlyBracket,
     CurvedArrow,
@@ -132,3 +133,14 @@ def annotate_text_box(text, x, y, fontSize, width, height):
         ftext(text) or "",
         Point._new(fnum(x), fnum(y)),
     )
+
+
+@geomatic_fn(
+    keyword="text-box-corners",
+    name="TextBoxCorners",
+    output="Array",
+    params=[P("box", "TextBox")],
+    category=CATEGORY,
+)
+def text_box_corners(box):
+    return Array._new(element_type="Point", elements=[Point._new() for _ in range(4)])

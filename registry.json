@@ -3766,6 +3766,24 @@
     "operandTypes": null
   },
   {
+    "keyword": "text-box-corners",
+    "name": "TextBoxCorners",
+    "parameters": [
+      {
+        "name": "box",
+        "type": "TextBox",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
     "keyword": "trail",
     "name": "Trail",
     "parameters": [

@@ -316,6 +316,7 @@ from .functions.implementations.annotation_functions import (  # noqa: F401
     annotate_leader_line,
     annotate_pin,
     annotate_text_box,
+    text_box_corners,
 )
 from .functions.overloads import (  # noqa: F401
     abs_,
