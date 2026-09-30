@@ -40,9 +40,11 @@ def array(elements):
     broadcasts=False,  # array.ts: indexes the array, does not iterate it
 )
 def get_array_element(arr, index):
-    i = fint(index)
     if not isinstance(arr, Array):
         return Unknown._new()
+    if isinstance(index, Array):
+        return _get_array_elements(arr, index)
+    i = fint(index)
     if i is None:
         # A valueless index (a slider, say). Which element is unknown, but the
         # element TYPE need not be.
@@ -60,6 +62,29 @@ def get_array_element(arr, index):
     # The DSL assigns the element to a NEW node id — clone so the output node
     # gets its own identity without re-referencing the source element.
     return arr._elements[i].model_copy()
+
+
+def _get_array_elements(arr: Array, indices: Array) -> Array:
+    """An Array index picks one element per index, shaped like `indices`
+    (array.ts: the index is iterated, the source array is not)."""
+    n = arr._length()
+    picks = [fint(el) for el in indices._elements]
+    if n is not None:
+        for i in picks:
+            if i is not None and (i < 0 or i >= n):
+                raise IndexError(f"get-array-element: index {i} out of range for length {n}")
+    complete = (
+        indices._shape is not None
+        and len(picks) == indices._length()
+        and all(i is not None and i < len(arr._elements) for i in picks)
+    )
+    elements = [arr._elements[i] for i in picks] if complete else []
+    return Array._new(
+        element_type=arr._element_type,
+        elements=elements,
+        shape=indices._shape,
+        shape_unknown=indices._shape is None,
+    )
 
 
 @geomatic_fn(

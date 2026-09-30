@@ -774,7 +774,8 @@ class Array(GNode):
         return n
 
     def __getitem__(self, key):
-        """`arr[i]` records `\\get-array-element arr i` (i: int or Scalar).
+        """`arr[i]` records `\\get-array-element arr i` (i: int, Scalar, or an
+        Array of indices, which picks one element per index).
 
         A literal negative index is normalized against the record-time length
         (the engine has no negative indexing). With `__len__`, this also makes
@@ -798,9 +799,10 @@ class Array(GNode):
                         "is unknown at record time"
                     )
                 key %= n
-        elif not isinstance(key, Scalar):
+        elif not isinstance(key, (Scalar, Array)):
             raise TypeError(
-                f"array index must be an int or a Scalar node, got {type(key).__name__!r}"
+                "array index must be an int or a Scalar node, or an Array of "
+                f"indices, got {type(key).__name__!r}"
             )
         return _infix("get-array-element", self, key)
 

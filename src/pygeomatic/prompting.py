@@ -137,7 +137,8 @@ Rules (violations raise errors):
    Scalars and Arrays — \\mod takes no Complex operand, and `%` chains do
    not fuse.
    `x = arr[i]` emits `x = \\get-array-element arr i` (int or Scalar index;
-   literal negative indices are normalized), and `len(arr)` is a plain
+   literal negative indices are normalized; an Array of indices returns an
+   Array of the picked elements), and `len(arr)` is a plain
    python int recorded as nothing, so `for k in range(len(arr)):` unrolls.
    Chained `a = b = gm.scalar(1)` records one command per target name.
    NOT supported (use the explicit functions): `**` (`gm.pow_`), `@`,

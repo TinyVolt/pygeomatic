@@ -38,6 +38,7 @@ first = xs[0]                        # records \get-array-element xs 0
 last = xs[-1]                        # negative literal indices are allowed
 i = gm.scalar(2)
 picked = xs[i]                       # a Scalar node as the index stays live
+some = xs[gm.array(0, 2)]            # an Array of indices returns an Array
 count = xs.length                    # a Scalar node
 n = len(xs)                          # a plain Python int, for loops
 for k in range(n):
