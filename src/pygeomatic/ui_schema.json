@@ -159,7 +159,8 @@
         "options": { "type": "options", "required": true },
         "initialValue": { "type": "any" },
         "label": { "type": "string" },
-        "display": { "type": "any" }
+        "display": { "type": "any" },
+        "vertical": { "type": "bool", "default": false }
       }
     },
     "text": {

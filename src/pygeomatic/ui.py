@@ -369,7 +369,7 @@ def _check_display(display, options, kind: str):
     return attr
 
 
-def _choice(kind: str, options, value, label, display=None, sizing=None):
+def _choice(kind: str, options, value, label, display=None, sizing=None, vertical=False):
     from .functions.implementations.basic_figures import scalar
     from .functions.implementations.basic_figures import text as _text_node
 
@@ -407,7 +407,13 @@ def _choice(kind: str, options, value, label, display=None, sizing=None):
     _register(
         node,
         kind,
-        {"initial-value": initial, "options": attr, "label": label, "display": display},
+        {
+            "initial-value": initial,
+            "options": attr,
+            "label": label,
+            "display": display,
+            "vertical": True if vertical else None,
+        },
         sizing,
     )
     return node
@@ -443,6 +449,7 @@ def radio(
     label: Optional[str] = None,
     display: Optional[Union[Sequence[str], Array]] = None,
     *,
+    vertical: bool = False,
     width=None,
     height=None,
     min_width=None,
@@ -456,8 +463,9 @@ def radio(
 ) -> "GNode":
     """Radio buttons, otherwise like `dropdown`. `value=None` starts with nothing
     selected; with string options, so does `value=""`. Each option's shown text
-    renders LaTeX in `$...$` or `\\(...\\)`; write `\\$` for a literal `$`."""
-    return _choice("radio", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height))
+    renders LaTeX in `$...$` or `\\(...\\)`; write `\\$` for a literal `$`.
+    `vertical=True` stacks the options in a column instead of a row."""
+    return _choice("radio", options, value, label, display, _sizing(width, height, grow, pad, font_size, align_self, min_width, max_width, min_height, max_height), vertical)
 
 
 def text(
