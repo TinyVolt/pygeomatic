@@ -14,10 +14,10 @@ from ...nodes import (
     CurlyBracket,
     CurvedArrow,
     DimensionLine,
-    ElbowArrow,
     LeaderLine,
     Pin,
     Point,
+    PolylineArrow,
     TextBox,
 )
 from ...registry import P, geomatic_fn
@@ -71,21 +71,14 @@ def annotate_curved_arrow(p1, p2, control, padding, label):
 
 
 @geomatic_fn(
-    keyword="annotate-elbow-arrow",
-    name="ElbowArrow",
-    output="ElbowArrow",
-    params=[
-        P("p1", "Point"),
-        P("p2", "Point"),
-        P("lane", "Scalar"),
-        P("stub", "Scalar", default=0.5),
-        P("vertical", "Bool", default="F"),
-        P("label", "Text", default=""),
-    ],
+    keyword="annotate-polyline-arrow",
+    name="PolylineArrow",
+    output="PolylineArrow",
+    params=[P("point1", "Point"), P("point2", "Point", variadic=True)],
     category=CATEGORY,
 )
-def annotate_elbow_arrow(p1, p2, lane, stub, vertical, label):
-    return ElbowArrow._new(p1, p2, ftext(label) or "")
+def annotate_polyline_arrow(point1, rest):
+    return PolylineArrow._new([point1, *rest])
 
 
 @geomatic_fn(
