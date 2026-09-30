@@ -14,6 +14,7 @@ from ...nodes import (
     CurlyBracket,
     CurvedArrow,
     DimensionLine,
+    ElbowArrow,
     LeaderLine,
     Pin,
     Point,
@@ -67,6 +68,24 @@ def annotate_arrow(p1, p2, padding, label):
 )
 def annotate_curved_arrow(p1, p2, control, padding, label):
     return CurvedArrow._new(p1, p2, control, ftext(label) or "")
+
+
+@geomatic_fn(
+    keyword="annotate-elbow-arrow",
+    name="ElbowArrow",
+    output="ElbowArrow",
+    params=[
+        P("p1", "Point"),
+        P("p2", "Point"),
+        P("lane", "Scalar"),
+        P("stub", "Scalar", default=0.5),
+        P("vertical", "Bool", default="F"),
+        P("label", "Text", default=""),
+    ],
+    category=CATEGORY,
+)
+def annotate_elbow_arrow(p1, p2, lane, stub, vertical, label):
+    return ElbowArrow._new(p1, p2, ftext(label) or "")
 
 
 @geomatic_fn(

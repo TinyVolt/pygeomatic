@@ -683,6 +683,59 @@
     "operandTypes": null
   },
   {
+    "keyword": "annotate-elbow-arrow",
+    "name": "ElbowArrow",
+    "parameters": [
+      {
+        "name": "p1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "p2",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "lane",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "stub",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0.5
+      },
+      {
+        "name": "vertical",
+        "type": "Bool",
+        "variadic": false,
+        "hasDefault": true,
+        "default": "F"
+      },
+      {
+        "name": "label",
+        "type": "Text",
+        "variadic": false,
+        "hasDefault": true,
+        "default": ""
+      }
+    ],
+    "outputType": "ElbowArrow",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
     "keyword": "annotate-leader-line",
     "name": "LeaderLine",
     "parameters": [

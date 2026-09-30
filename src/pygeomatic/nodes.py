@@ -927,6 +927,19 @@ class CurvedArrow(GNode):
         return n
 
 
+class ElbowArrow(GNode):
+    type: ClassVar[str] = "ElbowArrow"
+    _p1: Optional[Point] = PrivateAttr(default=None)
+    _p2: Optional[Point] = PrivateAttr(default=None)
+    _label: str = PrivateAttr(default="")
+
+    @classmethod
+    def _new(cls, p1=None, p2=None, label: str = "") -> "ElbowArrow":
+        n = cls()
+        n._p1, n._p2, n._label = p1, p2, label
+        return n
+
+
 class DimensionLine(GNode):
     type: ClassVar[str] = "DimensionLine"
     _p1: Optional[Point] = PrivateAttr(default=None)
@@ -1071,6 +1084,7 @@ NODE_CLASSES: dict[str, type[GNode]] = {
     "Trajectory": Trajectory,
     "Arrow": Arrow,
     "CurvedArrow": CurvedArrow,
+    "ElbowArrow": ElbowArrow,
     "DimensionLine": DimensionLine,
     "AngleMark": AngleMark,
     "CurlyBracket": CurlyBracket,
