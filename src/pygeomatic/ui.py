@@ -299,8 +299,6 @@ def _choice_options(options, kind: str) -> tuple[list, str, object]:
         if any(v is None for v in values):
             values = []
         choices = [float(v) for v in values] if mode == "scalar" else list(values)
-        if len(set(choices)) != len(choices):
-            raise UIError(f"gm.ui.{kind} options must be distinct")
         return choices, mode, {"node": options.id}
 
     if not isinstance(options, (list, tuple)) or not options:
@@ -317,11 +315,6 @@ def _choice_options(options, kind: str) -> tuple[list, str, object]:
             f"{list(options)!r}. Strings make a Text node, numbers a Scalar node."
         )
 
-    if len(set(choices)) != len(choices):
-        raise UIError(
-            f"gm.ui.{kind} options must be distinct — the node holds the chosen "
-            "one, so duplicates would be indistinguishable"
-        )
     return choices, mode, choices
 
 
@@ -345,6 +338,14 @@ def _choice(kind: str, options, value, label, display=None, sizing=None):
 
     choices, mode, attr = _choice_options(options, kind)
     display = _check_display(display, options, kind)
+    if display is None and len(set(choices)) != len(choices):
+        raise UIError(
+            f"gm.ui.{kind} options must be distinct — the node holds the chosen "
+            "one, so duplicates would be indistinguishable. Pass `display` to "
+            "show distinct labels for repeated values."
+        )
+    if display is not None and len(set(display)) != len(display):
+        raise UIError(f"gm.ui.{kind} display labels must be distinct")
     if value is _FIRST_OPTION:
         if not choices:
             raise UIError(f"gm.ui.{kind} options array has no known value; pass value= explicitly")
