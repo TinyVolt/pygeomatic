@@ -817,4 +817,4 @@ def flowchart(data: str) -> str:
     ])
     title = layout["fields"].get("title", "")
     heading = f"# {title}\n\n" if title else ""
-    return f"{heading}```pygeomatic\n{code}\n```\n"
+    return f"---\nlayout: canvas-only\n---\n{heading}```pygeomatic\n{code}\n```\n"
