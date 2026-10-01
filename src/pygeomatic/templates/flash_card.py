@@ -23,7 +23,7 @@ def _card_setup(n: int, options: list[str]) -> str:
     """, 1)
 
 
-def _card_block(n: int, total: int, question: str, hint: str, options: list[str]) -> str:
+def _card_block(n: int, total: int, question: str, hint: str, options: list[str], vertical: bool) -> str:
     unanswered = f"gm.cond.not_(gm.cond.ge(answer_{n}, 0))"
     if n == 1:
         gate = unanswered
@@ -50,7 +50,7 @@ def _card_block(n: int, total: int, question: str, hint: str, options: list[str]
     """, 5))
     parts.append(_block(f"""
         gm.ui.label({_q(question)}, pad=1)
-        answer_{n} = gm.ui.radio(values_{n}, value=None, display=labels_{n})
+        answer_{n} = gm.ui.radio(values_{n}, value=None, display=labels_{n}{', vertical=True' if vertical else ''})
     """, 4))
     if n > 1:
         parts.append(_block(f"{_score_var(n)} = {_score_var(n - 1)} + answer_{n}", 4))
@@ -86,10 +86,13 @@ def flash_card(data: str) -> str:
     options are shuffled each time the quiz starts. Quote a field that
     contains a comma: `"Pick one, please", yes, , no`.
 
-    An optional frontmatter block at the top sets the article's heading:
+    An optional frontmatter block at the top sets the article's heading and
+    how each card's options are stacked, in a `row` (the default) or a
+    `column`:
 
         ---
         title: Capitals
+        stack: row
         ---
 
     With no title there is no heading. The article is text only: the canvas
@@ -101,6 +104,10 @@ def flash_card(data: str) -> str:
     shows the final score and a restart button.
     """
     fields, body, skipped = _frontmatter(data)
+    stack = fields.get("stack", "row")
+    if stack not in ("row", "column"):
+        raise TemplateError(f"stack must be row or column, got {stack!r}")
+    vertical = stack == "column"
     cards = []
     for lineno, row in _rows(body, first_line=skipped + 1):
         if len(row) < 2 or not row[0] or not row[1]:
@@ -116,7 +123,7 @@ def flash_card(data: str) -> str:
     total = len(cards)
     numbered = list(enumerate(cards, start=1))
     setups = [_card_setup(n, options) for n, (_, _, _, options) in numbered]
-    blocks = [_card_block(n, total, question, hint, options) for n, (question, _, hint, options) in numbered]
+    blocks = [_card_block(n, total, question, hint, options, vertical) for n, (question, _, hint, options) in numbered]
     restarts = [_card_restart(n, hint) for n, (_, _, hint, _) in numbered]
     final = _block(f"""
         with gm.when(gm.cond.ge(answer_{total}, 0)):
