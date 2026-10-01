@@ -38,6 +38,7 @@ first = xs[0]                        # records \get-array-element xs 0
 last = xs[-1]                        # negative literal indices are allowed
 i = gm.scalar(2)
 picked = xs[i]                       # a Scalar node as the index stays live
+some = xs[gm.array(0, 2)]            # an Array of indices returns an Array
 count = xs.length                    # a Scalar node
 n = len(xs)                          # a plain Python int, for loops
 for k in range(n):
@@ -156,7 +157,7 @@ These use the array as one value and do not run per element:
 
 - `array`, `get_array_element`, `reshape`, `linspace`
 - `reduce_sum`, `reduce_min`, `reduce_max`, `reduce_mean`, `reduce_std`, `reduce_var`
-- `softmax`, `cumsum`, `fft`, `ifft`, `filter_`
+- `softmax`, `cumsum`, `fft`, `ifft`, `filter_`, `shuffle`
 
 ```python
 xs = gm.linspace(-3, 3, 7)
@@ -170,6 +171,25 @@ positive = gm.filter_(xs, gm.gt(xs, 0))   # keeps elements where the mask is tru
 
 `dim=-1` (the default) reduces over every element to one Scalar. `dim=k` removes axis
 `k`.
+
+`shuffle(array, key=-1, axis=0)` returns the same elements in a random order, with the
+same shape and element type:
+
+```python
+xs = gm.array(0, 1, 2, 3, 4)
+fixed = gm.shuffle(xs, 7)            # same order every time, in Python and on the page
+fresh = gm.shuffle(xs)               # new order on every recompute
+grid = gm.reshape(gm.arange(0, 6, 1), 3, 2)
+rows = gm.shuffle(grid, 7, 0)        # reorders the 3 rows; each row stays intact
+cols = gm.shuffle(grid, 7, 1)        # one column order, applied to every row
+```
+
+- `key` 0 or above gives a fixed order. Change it to get another order. The Python values
+  match the page exactly.
+- `key` below 0 (the default) reshuffles on the page every time an input changes. The
+  Python values use their own random order, so they will not match the page.
+- `axis` must be between 0 and the number of dimensions minus 1; negative axes raise an
+  error.
 
 ## Pitfalls
 

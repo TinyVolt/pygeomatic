@@ -112,6 +112,7 @@ NAMING_PATTERNS: dict[str, str] = {
     "Trajectory": "de-{counter}",
     "Arrow": "arrow-{counter}",
     "CurvedArrow": "carrow-{counter}",
+    "PolylineArrow": "parrow-{counter}",
     "DimensionLine": "dim-{counter}",
     "AngleMark": "amk-{counter}",
     "CurlyBracket": "brace-{counter}",

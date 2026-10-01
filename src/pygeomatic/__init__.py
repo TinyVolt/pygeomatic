@@ -80,6 +80,7 @@ from .nodes import (  # noqa: F401
     Point,
     PointGradient,
     Polygon,
+    PolylineArrow,
     Polynomial,
     PropRef,
     RegularPolygon,
@@ -254,7 +255,7 @@ from .functions.implementations.tensor_functions import (  # noqa: F401
     zeros,
     zeros_like,
 )
-from .functions.implementations.array import array, get_array_element  # noqa: F401
+from .functions.implementations.array import array, get_array_element, shuffle  # noqa: F401
 from .functions.implementations.translation_functions import (  # noqa: F401
     animate,
     translate,
@@ -315,7 +316,9 @@ from .functions.implementations.annotation_functions import (  # noqa: F401
     annotate_dim_line,
     annotate_leader_line,
     annotate_pin,
+    annotate_polyline_arrow,
     annotate_text_box,
+    text_box_corners,
 )
 from .functions.overloads import (  # noqa: F401
     abs_,

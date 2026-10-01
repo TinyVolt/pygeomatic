@@ -740,6 +740,31 @@
     "operandTypes": null
   },
   {
+    "keyword": "annotate-polyline-arrow",
+    "name": "PolylineArrow",
+    "parameters": [
+      {
+        "name": "point1",
+        "type": "Point",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "point2",
+        "type": "Point",
+        "variadic": true,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "PolylineArrow",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
+    "operandTypes": null
+  },
+  {
     "keyword": "annotate-text-box",
     "name": "TextBox",
     "parameters": [
@@ -3357,6 +3382,38 @@
     "operandTypes": null
   },
   {
+    "keyword": "shuffle",
+    "name": "Shuffle",
+    "parameters": [
+      {
+        "name": "array",
+        "type": "Array",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      },
+      {
+        "name": "key",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": -1
+      },
+      {
+        "name": "axis",
+        "type": "Scalar",
+        "variadic": false,
+        "hasDefault": true,
+        "default": 0
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Arrays",
+    "operandTypes": null
+  },
+  {
     "keyword": "sigmoid",
     "name": "Sigmoid",
     "parameters": [
@@ -3731,6 +3788,24 @@
     "isImperative": false,
     "isAsync": false,
     "category": "Basic Figures",
+    "operandTypes": null
+  },
+  {
+    "keyword": "text-box-corners",
+    "name": "TextBoxCorners",
+    "parameters": [
+      {
+        "name": "box",
+        "type": "TextBox",
+        "variadic": false,
+        "hasDefault": false,
+        "default": null
+      }
+    ],
+    "outputType": "Array",
+    "isImperative": false,
+    "isAsync": false,
+    "category": "Annotations",
     "operandTypes": null
   },
   {

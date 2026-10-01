@@ -37,8 +37,8 @@ Scalar keeps working untouched: `gm.circle(gm.p0, r)`, `r * 2`,
 | `gm.ui.slider` | `Scalar` | `(start, stop, step=None, value=None, label=None, show_value=True)` |
 | `gm.ui.number` | `Scalar` | `(start=None, stop=None, value=None, step=None, label=None)` |
 | `gm.ui.checkbox` | `Bool` | `(value=False, label=None)` |
-| `gm.ui.dropdown` | `Text` | `(options, value=None, label=None)` |
-| `gm.ui.radio` | `Text` | `(options, value=None, label=None)` |
+| `gm.ui.dropdown` | `Text` | `(options, value=None, label=None, display=None)` |
+| `gm.ui.radio` | `Text` | `(options, value=None, label=None, display=None, *, vertical=False)` |
 | `gm.ui.text` | `Text` | `(value="", label=None, placeholder=None)` |
 
 `slider` needs `stop > start` and a positive `step` no wider than the range;

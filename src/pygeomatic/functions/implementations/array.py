@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from ...nodes import NODE_CLASSES, Array, GNode, Scalar, Unknown
 from ...registry import P, geomatic_fn
-from ..helpers import fint, fnum
+import random
+
+import numpy as np
+
+from ..helpers import fint, fnum, mulberry32
 
 CATEGORY = "Arrays"
 
@@ -36,9 +40,11 @@ def array(elements):
     broadcasts=False,  # array.ts: indexes the array, does not iterate it
 )
 def get_array_element(arr, index):
-    i = fint(index)
     if not isinstance(arr, Array):
         return Unknown._new()
+    if isinstance(index, Array):
+        return _get_array_elements(arr, index)
+    i = fint(index)
     if i is None:
         # A valueless index (a slider, say). Which element is unknown, but the
         # element TYPE need not be.
@@ -56,6 +62,71 @@ def get_array_element(arr, index):
     # The DSL assigns the element to a NEW node id — clone so the output node
     # gets its own identity without re-referencing the source element.
     return arr._elements[i].model_copy()
+
+
+def _get_array_elements(arr: Array, indices: Array) -> Array:
+    """An Array index picks one element per index, shaped like `indices`
+    (array.ts: the index is iterated, the source array is not)."""
+    n = arr._length()
+    picks = [fint(el) for el in indices._elements]
+    if n is not None:
+        for i in picks:
+            if i is not None and (i < 0 or i >= n):
+                raise IndexError(f"get-array-element: index {i} out of range for length {n}")
+    complete = (
+        indices._shape is not None
+        and len(picks) == indices._length()
+        and all(i is not None and i < len(arr._elements) for i in picks)
+    )
+    elements = [arr._elements[i] for i in picks] if complete else []
+    return Array._new(
+        element_type=arr._element_type,
+        elements=elements,
+        shape=indices._shape,
+        shape_unknown=indices._shape is None,
+    )
+
+
+@geomatic_fn(
+    keyword="shuffle",
+    name="Shuffle",
+    output="Array",
+    params=[
+        P("array", "Array"),
+        P("key", "Scalar", default=-1),
+        P("axis", "Scalar", default=0),
+    ],
+    category=CATEGORY,
+    broadcasts=False,
+)
+def shuffle(arr, key, axis):
+    if not isinstance(arr, Array):
+        return Unknown._new()
+    shape = arr._shape
+    if shape is None:
+        return Array._new(element_type=arr._element_type, elements=[], shape_unknown=True)
+    ax = fint(axis)
+    if ax is not None and (ax < 0 or ax >= len(shape)):
+        raise ValueError(f"shuffle: axis {ax} out of range for array of shape {list(shape)}")
+    k = fnum(key)
+    if ax is None or k is None or len(arr._elements) != arr._length():
+        return Array._new(element_type=arr._element_type, elements=[], shape=shape)
+
+    uniform = random.random if k < 0 else mulberry32(k)
+    n = shape[ax]
+    perm = list(range(n))
+    for i in range(n - 1, 0, -1):
+        j = int(uniform() * (i + 1))
+        perm[i], perm[j] = perm[j], perm[i]
+
+    inner = int(np.prod(shape[ax + 1 :]))
+    outer = int(np.prod(shape[:ax]))
+    elements: list[GNode] = []
+    for o in range(outer):
+        for j in range(n):
+            start = (o * n + perm[j]) * inner
+            elements.extend(arr._elements[start : start + inner])
+    return Array._new(element_type=arr._element_type, elements=elements, shape=shape)
 
 
 def _empty_element(element_type) -> GNode:

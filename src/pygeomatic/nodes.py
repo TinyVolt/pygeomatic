@@ -774,7 +774,8 @@ class Array(GNode):
         return n
 
     def __getitem__(self, key):
-        """`arr[i]` records `\\get-array-element arr i` (i: int or Scalar).
+        """`arr[i]` records `\\get-array-element arr i` (i: int, Scalar, or an
+        Array of indices, which picks one element per index).
 
         A literal negative index is normalized against the record-time length
         (the engine has no negative indexing). With `__len__`, this also makes
@@ -798,9 +799,10 @@ class Array(GNode):
                         "is unknown at record time"
                     )
                 key %= n
-        elif not isinstance(key, Scalar):
+        elif not isinstance(key, (Scalar, Array)):
             raise TypeError(
-                f"array index must be an int or a Scalar node, got {type(key).__name__!r}"
+                "array index must be an int or a Scalar node, or an Array of "
+                f"indices, got {type(key).__name__!r}"
             )
         return _infix("get-array-element", self, key)
 
@@ -922,6 +924,17 @@ class CurvedArrow(GNode):
     def _new(cls, p1=None, p2=None, control=None, label: str = "") -> "CurvedArrow":
         n = cls()
         n._p1, n._p2, n._control, n._label = p1, p2, control, label
+        return n
+
+
+class PolylineArrow(GNode):
+    type: ClassVar[str] = "PolylineArrow"
+    _points: list = PrivateAttr(default_factory=list)
+
+    @classmethod
+    def _new(cls, points=None) -> "PolylineArrow":
+        n = cls()
+        n._points = list(points or [])
         return n
 
 
@@ -1069,6 +1082,7 @@ NODE_CLASSES: dict[str, type[GNode]] = {
     "Trajectory": Trajectory,
     "Arrow": Arrow,
     "CurvedArrow": CurvedArrow,
+    "PolylineArrow": PolylineArrow,
     "DimensionLine": DimensionLine,
     "AngleMark": AngleMark,
     "CurlyBracket": CurlyBracket,
